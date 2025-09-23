@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        "pager.h": "c",
+        "stdlib.h": "c",
+        "stdint.h": "c",
+        "stat.h": "c",
+        "y.tab.h": "c",
+        "sql4limit.h": "c"
+    }
+}

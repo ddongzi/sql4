@@ -4,7 +4,7 @@
 TARGET = db
 
 # 源文件
-SRC = main.c
+SRC = main.c pager.c
 
 # 编译器
 CC = gcc
