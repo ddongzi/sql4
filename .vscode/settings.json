@@ -5,6 +5,7 @@
         "stdint.h": "c",
         "stat.h": "c",
         "y.tab.h": "c",
-        "sql4limit.h": "c"
+        "sql4limit.h": "c",
+        "btree.h": "c"
     }
 }

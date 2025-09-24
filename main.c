@@ -55,15 +55,6 @@ typedef struct {
     char content[COLUMN_CONTENT_SIZE + 1];  // 日志内容
 } row_t;
 
-typedef struct {
-    statement_type type;
-    row_t row;
-} sql_statement;
-
-// 命令执行结果
-typedef enum {
-
-} SQL4_CODE;
 
 typedef struct table_t {
     BTree* tree;    // 对应一个tree
@@ -119,71 +110,7 @@ void deserialize_row(void* src, row_t* destination) {
     memcpy(&(destination->content), src +  FIELD_OFFSET(row_t, content),  FIELD_SIZE(row_t, content));
 }
 
-/**
- * @brief 执行select
- */
-SQL4_CODE execute_select(sql_statement * statement, table_t * table)
-{
-    row_t row;
-    size_t selectsize;
-    uint8_t** data;
 
-    if (btree_select(table->tree, &selectsize, data) != BTREE_SELECT_SUCCESS) {
-        fprintf(stderr, "btree select err: %d", sql4_errno);
-        return EXECUTE_ERR;
-    }
-    // TODO data print
-    return EXECUTE_SUCCESS;
-}
-
-/**
- * @brief 执行insert
- */
-SQL4_CODE execute_insert(sql_statement* statement, table_t* table)
-{
-    row_t* row = &(statement->row);
-    uint32_t key = row->time;
-    if (btree_insert(table->tree, key, row, sizeof(row)) != BTREE_INSERT_SUCCESS) {
-        fprintf(stderr, "btree insert error: %d", sql4_errno);
-        return EXECUTE_ERR;
-    }
-    return EXECUTE_SUCCESS;
-}
-
-/**
- * @brief 通过id找到cell，请0文本，移除cell
- * 
- * @param statement 
- * @param table 
- * @return SQL4_CODE 
- */
-SQL4_CODE execute_delete(sql_statement *statement, table_t *table)
-{
-    time_t time = statement->row.time;
-    time_t key = time;
-
-    if (btree_delete(table->tree, key) != BTREE_DELETE_SUCCESS) {
-        fprintf(stderr, "btree delete err: %d", sql4_errno);
-    }
-    return EXECUTE_SUCCESS;
-}
-/*
- * virtual machines
- * */
-SQL4_CODE execute_statement(sql_statement *statement, table_t *table)
-{
-    switch (statement->type) {
-        case STATEMENT_INSERT:
-            return execute_insert(statement, table);
-        case STATEMENT_SELECT:
-            return execute_select(statement, table);
-        case STATEMENT_DELETE:
-            return execute_delete(statement, table);
-        default:
-            perror("unkown execute type");
-            return EXECUTE_UNKNOWN_ERR;
-    }
-}
 
 
 /* db初始化
@@ -211,61 +138,6 @@ table_t *db_open(const char *file_name)
     return table;
 }
 
-/* 处理insert*/
-prepare_res_type prepare_insert(input_buffer_t* input_buffer, sql_statement *statement)
-{
-    statement->type = STATEMENT_INSERT;
-    char *keyword = strtok(input_buffer->buffer, " ");
-    char *time_str = strtok(NULL, " ");
-    char *source = strtok(NULL, " ");
-    char *content = strtok(NULL, " ");
-
-    if (time_str == NULL || source == NULL || content == NULL) {
-        return PREPARE_SYNTAX_ERROR;
-    }
-    time_t time = atoi(time_str);
-
-    if (strlen(source) > COLUMN_SOURCE_SIZE) {
-        return PREPARE_STRING_TOO_LONG;
-    }
-    if (strlen(content) > COLUMN_CONTENT_SIZE) {
-        return PREPARE_STRING_TOO_LONG;
-    }
-    statement->row.time = time;
-    strcpy(statement->row.source, source);
-    strcpy(statement->row.content, content);
-    return PREPARE_SUCCESS;
-}
-
-prepare_res_type prepare_delete(input_buffer_t *input_buffer, sql_statement *statement)
-{
-    statement->type = STATEMENT_DELETE;
-    char *keyword = strtok(input_buffer->buffer, " ");
-    char *time_str = strtok(NULL, " ");
-    time_t time = atoi(time_str);
-
-    statement->row.time = time;
-    return PREPARE_SUCCESS;
-}
-/* 填充 statement*/
-/*
- * insert 1 cstack foo@bar.com
-*/
-prepare_res_type prepare_statement(input_buffer_t *input_buffer, sql_statement *statement)
-{
-    if (strncmp(input_buffer->buffer, "insert", 6) == 0) {
-        return prepare_insert(input_buffer, statement);
-    }
-    if (strncmp(input_buffer->buffer, "select", 6) == 0) {
-        statement->type = STATEMENT_SELECT;
-        return PREPARE_SUCCESS;
-    }
-    if (strncmp(input_buffer->buffer, "delete", 6) == 0) {
-        statement->type = STATEMENT_DELETE;
-        return prepare_delete(input_buffer, statement);
-    }
-    return PREPARE_UNRECOGNIZED_STATEMENT;
-}
 
 /*处理源命令*/
 meta_cmd_res do_meta_command(input_buffer_t *input_buffer, table_t *table)
