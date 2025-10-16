@@ -6,6 +6,7 @@
         "stat.h": "c",
         "y.tab.h": "c",
         "sql4limit.h": "c",
-        "btree.h": "c"
+        "btree.h": "c",
+        "sql4code.h": "c"
     }
 }
