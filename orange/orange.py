@@ -23,15 +23,31 @@ class Interpreter():
         self.current_token = None
     def error(self):
         raise Exception('interpreter error!')
+    
     def get_next_token(self):
-        text = self.text
         if self.pos > len(self.text) - 1:
             return Token(EOF, None)
         current_char = self.text[self.pos]
-        digit_start
-        while current_char.isdigit():
-            self.pos += 1
-
+        digit_str = ''
+        while True:
+            if self.pos > len(self.text) - 1:
+                if len(digit_str) >= 1:
+                    return Token(INTEGER, int(digit_str))
+                return Token(EOF, None)
+            current_char = self.text[self.pos]
+            if current_char.isdigit():
+                self.pos += 1
+                digit_str += current_char
+                continue
+            if current_char.isspace():
+                self.pos += 1
+                continue
+            if len(digit_str) >= 1:
+                token = Token(INTEGER, int(digit_str))
+                return token
+            else:
+                break
+        
         if current_char == '+':
             token = Token(PLUS, current_char)
             self.pos += 1

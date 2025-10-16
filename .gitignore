@@ -1,3 +1,4 @@
 *.db
 *.out
 db
+*/__pycache__
