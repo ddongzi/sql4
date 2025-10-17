@@ -1,6 +1,6 @@
 
 # token type
-INTEGER, PLUS, EOF = 'INTEGER', 'PLUS', 'EOF'
+INTEGER, PLUS, MINUS, EOF = 'INTEGER', 'PLUS', 'MINUS', 'EOF'
 
 class Token():
     def __init__(self, type, value):
@@ -21,38 +21,39 @@ class Interpreter():
         self.pos = 0
         # token
         self.current_token = None
+        self.current_char = self.text[self.pos]
     def error(self):
         raise Exception('interpreter error!')
-    
-    def get_next_token(self):
+    def advance(self):
+        self.pos += 1
         if self.pos > len(self.text) - 1:
-            return Token(EOF, None)
-        current_char = self.text[self.pos]
-        digit_str = ''
-        while True:
-            if self.pos > len(self.text) - 1:
-                if len(digit_str) >= 1:
-                    return Token(INTEGER, int(digit_str))
-                return Token(EOF, None)
-            current_char = self.text[self.pos]
-            if current_char.isdigit():
-                self.pos += 1
-                digit_str += current_char
+            self.current_char = None
+        else:
+            self.current_char = self.text[self.pos]
+    def skip_space(self):
+        while self.current_char is not None and self.current_char.isspace():
+            self.advance()
+    def integer(self):
+        result = ''
+        while self.current_char is not None and self.current_char.isdigit():
+            result += self.current_char
+            self.advance()
+        return int(result)
+    def get_next_token(self):
+        while self.current_char is not None:
+            if self.current_char.isspace():
+                self.skip_space()
                 continue
-            if current_char.isspace():
-                self.pos += 1
-                continue
-            if len(digit_str) >= 1:
-                token = Token(INTEGER, int(digit_str))
-                return token
-            else:
-                break
-        
-        if current_char == '+':
-            token = Token(PLUS, current_char)
-            self.pos += 1
-            return token
-        self.error()
+            if self.current_char.isdigit():
+                return Token(INTEGER, self.integer())
+            if self.current_char == '+':
+                self.advance()
+                return Token(PLUS, '+')
+            if self.current_char == '-':
+                self.advance()
+                return Token(MINUS, '-')
+            self.error()
+        return Token(EOF, None)
     def eat(self, token_type):
         """ 接受指定类型的token, 并且cur_token next
         
@@ -61,24 +62,30 @@ class Interpreter():
             self.current_token = self.get_next_token()
         else:
             self.error()
+    def term(self):
+        """ 参考语法图
+        
+        """
+        token = self.current_token
+        self.eat(INTEGER)
+        return token.value
     def expr(self):
-        """ 
+        """ 解释表达式
         
         """
         self.current_token = self.get_next_token()
-        left = self.current_token
-        # expect a int
-        self.eat(INTEGER)
-
-        op = self.current_token
-        self.eat(PLUS)
-
-        right = self.current_token
-        self.eat(INTEGER)
-
-        result = left.value + right.value
+        result = self.term()
+        # 还没开始 或者 没到末尾
+        while self.current_token.type in (PLUS, MINUS):
+            # expect a int
+            op = self.current_token
+            if op.type == PLUS:
+                self.eat(PLUS)
+                result = result + self.term()
+            elif op.type == MINUS:
+                self.eat(MINUS)
+                result = result - self.term()
         return result
-    
 def main():
     while True:
         try:
