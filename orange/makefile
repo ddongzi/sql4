@@ -1,6 +1,4 @@
-vdbe: lex.yy.o y.tab.o vdbe.c
-		gcc -o sql lex.yy.o y.tab.o vdbe.c -ll
-lex.yy.c: sql.l y.tab.c
+sql: sql.l sql.y
+	bison -d sql.y
 	flex sql.l
-y.tab.c: sql.y
-	bison -vdty sql.y
+	gcc -o $@ sql.tab.c lex.yy.c -lfl

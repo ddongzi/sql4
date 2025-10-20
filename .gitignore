@@ -2,3 +2,5 @@
 *.out
 db
 */__pycache__
+.vscode/*
+**/.vscode/*

@@ -1,0 +1,175 @@
+Grammar
+
+    0 $accept: stmt $end
+
+    1 stmt: T_DELETE T_FROM table where_clause T_SEMI
+
+    2 table: T_IDENT
+
+    3 where_clause: T_WHERE condition
+
+    4 condition: column T_LT value
+
+    5 column: T_IDENT
+
+    6 value: T_INT
+
+
+Terminals, with rules where they appear
+
+    $end (0) 0
+    error (256)
+    T_DELETE (258) 1
+    T_FROM (259) 1
+    T_WHERE (260) 3
+    T_SEMI (261) 1
+    T_LT (262) 4
+    T_INT <ival> (263) 6
+    T_IDENT <sval> (264) 2 5
+
+
+Nonterminals, with rules where they appear
+
+    $accept (10)
+        on left: 0
+    stmt <sval> (11)
+        on left: 1
+        on right: 0
+    table <sval> (12)
+        on left: 2
+        on right: 1
+    where_clause <sval> (13)
+        on left: 3
+        on right: 1
+    condition <sval> (14)
+        on left: 4
+        on right: 3
+    column <sval> (15)
+        on left: 5
+        on right: 4
+    value <ival> (16)
+        on left: 6
+        on right: 4
+
+
+State 0
+
+    0 $accept: • stmt $end
+
+    T_DELETE  shift, and go to state 1
+
+    stmt  go to state 2
+
+
+State 1
+
+    1 stmt: T_DELETE • T_FROM table where_clause T_SEMI
+
+    T_FROM  shift, and go to state 3
+
+
+State 2
+
+    0 $accept: stmt • $end
+
+    $end  shift, and go to state 4
+
+
+State 3
+
+    1 stmt: T_DELETE T_FROM • table where_clause T_SEMI
+
+    T_IDENT  shift, and go to state 5
+
+    table  go to state 6
+
+
+State 4
+
+    0 $accept: stmt $end •
+
+    $default  accept
+
+
+State 5
+
+    2 table: T_IDENT •
+
+    $default  reduce using rule 2 (table)
+
+
+State 6
+
+    1 stmt: T_DELETE T_FROM table • where_clause T_SEMI
+
+    T_WHERE  shift, and go to state 7
+
+    where_clause  go to state 8
+
+
+State 7
+
+    3 where_clause: T_WHERE • condition
+
+    T_IDENT  shift, and go to state 9
+
+    condition  go to state 10
+    column     go to state 11
+
+
+State 8
+
+    1 stmt: T_DELETE T_FROM table where_clause • T_SEMI
+
+    T_SEMI  shift, and go to state 12
+
+
+State 9
+
+    5 column: T_IDENT •
+
+    $default  reduce using rule 5 (column)
+
+
+State 10
+
+    3 where_clause: T_WHERE condition •
+
+    $default  reduce using rule 3 (where_clause)
+
+
+State 11
+
+    4 condition: column • T_LT value
+
+    T_LT  shift, and go to state 13
+
+
+State 12
+
+    1 stmt: T_DELETE T_FROM table where_clause T_SEMI •
+
+    $default  reduce using rule 1 (stmt)
+
+
+State 13
+
+    4 condition: column T_LT • value
+
+    T_INT  shift, and go to state 14
+
+    value  go to state 15
+
+
+State 14
+
+    6 value: T_INT •
+
+    $default  reduce using rule 6 (value)
+
+
+State 15
+
+    4 condition: column T_LT value •
+
+    $default  reduce using rule 4 (condition)
