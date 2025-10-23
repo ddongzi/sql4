@@ -1,3 +1,4 @@
+%debug
 
 /*====声明===*/
 %{
@@ -5,46 +6,60 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#include "sql.h"
+int yylex(void);  // flex
 void yyerror(char* s, ...);
-void emit(char* s, ...); // 产生逆波兰表达式, printf打印
+extern struct StmtList* root;
 %}
 
 %union {
-    int intval;
     char *strval;
-    double floatval;
-    int subtok;
+                int intval;
+        struct SelectStmt* selectStmtVal;
+        struct Expr* exprVal;
+        struct TableRef* tabRefVal;
+        struct ExprList* exprListVal;
+        struct Stmt* stmtVal;
+        struct StmtList* stmtListVal;    
 }
-/*名字和字面值*/
+%token EOL
 %token <strval> NAME
-%token <strval> STRING
-%token <intval> INTNUM
+%token <intval> INTNUM 
+%token SELECT FROM
+%type <exprVal> expr
+%type <exprListVal> expr_list
+%type <stmtVal> stmt
+%type <selectStmtVal> select_stmt
+%type <stmtListVal> stmt_list
+%type <tabRefVal> table_ref
 
+%start input
 /*====规则===*/
 %%
-stmt    :   T_DELETE T_FROM table where_clause T_SEMI {
-                emit(OP_OPEN, $3, 0);
-                emit(OP_DELETE, NULL, 0);
-                emit(OP_HALT, NULL, 0);
-            }
+input: stmt_list  EOL {  }
+        | EOL {}
         ;
-table   :   T_IDENT { $$ = $1; }
+stmt_list: stmt   { stmtListAdd(root, $1);  $$ = root;}
+        | stmt_list stmt  { stmtListAdd($1, $2); $$ = $1; }
         ;
-where_clause : T_WHERE condition { $$ = $2; }
+
+stmt: select_stmt { $$ = newStmt(STMT_SELECT, $1);}
         ;
-condition   : column T_LT value {
-                emit(OP_WHERE, $1, $3);
-            }
+select_stmt: SELECT expr_list FROM table_ref ';' {
+                $$ = newSelectStmt($2, $4);
+        }
         ;
-column  : T_IDENT { $$ = $1; }
+table_ref: NAME { $$ = newTableRef($1); }
         ;
-value   :   T_INT { $$ = $1; }
+expr: NAME { $$ = newExpr($1); }
         ;
+
+/*变长表达式列表*/
+expr_list: expr { $$ = newExprList($1); }
+        | expr_list ',' expr   { exprListAdd($1, $3); $$ = $1; }
+        ;
+
 %%
 
 /*===c代码===*/
 
-void yyerror(char* s, ...)
-{
-        fprintf(stderr, "error:%s\n", );
-}

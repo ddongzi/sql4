@@ -1,4 +1,4 @@
-sql: sql.l sql.y
-	bison -d sql.y
+sql: sql.l sql.y sql.h
 	flex sql.l
-	gcc -o $@ sql.tab.c lex.yy.c -lfl
+	bison -d -Wcounterexamples  sql.y 
+	gcc -o $@ sql.tab.c lex.yy.c sql.c -lfl

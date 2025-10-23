@@ -35,11 +35,11 @@
    especially those whose name start with YY_ or yy_.  They are
    private implementation details that can be changed or removed.  */
 
-#ifndef YY_YY_CAL_TAB_H_INCLUDED
-# define YY_YY_CAL_TAB_H_INCLUDED
+#ifndef YY_YY_SQL_TAB_H_INCLUDED
+# define YY_YY_SQL_TAB_H_INCLUDED
 /* Debug traces.  */
 #ifndef YYDEBUG
-# define YYDEBUG 0
+# define YYDEBUG 1
 #endif
 #if YYDEBUG
 extern int yydebug;
@@ -54,8 +54,11 @@ extern int yydebug;
     YYEOF = 0,                     /* "end of file"  */
     YYerror = 256,                 /* error  */
     YYUNDEF = 257,                 /* "invalid token"  */
-    NUMBER = 258,                  /* NUMBER  */
-    EOL = 259                      /* EOL  */
+    EOL = 258,                     /* EOL  */
+    NAME = 259,                    /* NAME  */
+    INTNUM = 260,                  /* INTNUM  */
+    SELECT = 261,                  /* SELECT  */
+    FROM = 262                     /* FROM  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -64,12 +67,18 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 11 "cal.y"
+#line 15 "sql.y"
 
-    struct AST* a;
-    double d;
+    char *strval;
+                int intval;
+        struct SelectStmt* selectStmtVal;
+        struct Expr* exprVal;
+        struct TableRef* tabRefVal;
+        struct ExprList* exprListVal;
+        struct Stmt* stmtVal;
+        struct StmtList* stmtListVal;    
 
-#line 73 "cal.tab.h"
+#line 82 "sql.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;
@@ -84,4 +93,4 @@ extern YYSTYPE yylval;
 int yyparse (void);
 
 
-#endif /* !YY_YY_CAL_TAB_H_INCLUDED  */
+#endif /* !YY_YY_SQL_TAB_H_INCLUDED  */

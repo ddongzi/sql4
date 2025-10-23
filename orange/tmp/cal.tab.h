@@ -35,11 +35,11 @@
    especially those whose name start with YY_ or yy_.  They are
    private implementation details that can be changed or removed.  */
 
-#ifndef YY_YY_Y_TAB_H_INCLUDED
-# define YY_YY_Y_TAB_H_INCLUDED
+#ifndef YY_YY_CAL_TAB_H_INCLUDED
+# define YY_YY_CAL_TAB_H_INCLUDED
 /* Debug traces.  */
 #ifndef YYDEBUG
-# define YYDEBUG 1
+# define YYDEBUG 0
 #endif
 #if YYDEBUG
 extern int yydebug;
@@ -54,39 +54,35 @@ extern int yydebug;
     YYEOF = 0,                     /* "end of file"  */
     YYerror = 256,                 /* error  */
     YYUNDEF = 257,                 /* "invalid token"  */
-    T_DELETE = 258,                /* T_DELETE  */
-    T_FROM = 259,                  /* T_FROM  */
-    T_WHERE = 260,                 /* T_WHERE  */
-    T_SEMI = 261,                  /* T_SEMI  */
-    T_LT = 262,                    /* T_LT  */
-    T_INT = 263,                   /* T_INT  */
-    T_IDENT = 264                  /* T_IDENT  */
+    NUMBER = 258,                  /* NUMBER  */
+    NAME = 259,                    /* NAME  */
+    FUNC = 260,                    /* FUNC  */
+    EOL = 261,                     /* EOL  */
+    IF = 262,                      /* IF  */
+    THEN = 263,                    /* THEN  */
+    ELSE = 264,                    /* ELSE  */
+    DO = 265,                      /* DO  */
+    WHILE = 266,                   /* WHILE  */
+    LET = 267,                     /* LET  */
+    CMP = 268,                     /* CMP  */
+    UMINUS = 269                   /* UMINUS  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
-/* Token kinds.  */
-#define YYEMPTY -2
-#define YYEOF 0
-#define YYerror 256
-#define YYUNDEF 257
-#define T_DELETE 258
-#define T_FROM 259
-#define T_WHERE 260
-#define T_SEMI 261
-#define T_LT 262
-#define T_INT 263
-#define T_IDENT 264
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 17 "sql.y"
+#line 11 "cal.y"
 
-    int ival;
-    char *sval;
+    struct AST* a;
+    double d;
+    struct symbol* s;
+    struct symlist* sl;
+    int fn; 
 
-#line 90 "y.tab.h"
+#line 86 "cal.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;
@@ -101,4 +97,4 @@ extern YYSTYPE yylval;
 int yyparse (void);
 
 
-#endif /* !YY_YY_Y_TAB_H_INCLUDED  */
+#endif /* !YY_YY_CAL_TAB_H_INCLUDED  */
