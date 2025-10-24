@@ -19,6 +19,7 @@
 #define FIELD_SIZE(type, field) sizeof(((type*)0)->field)
 #define FIELD_OFFSET(type, field) offsetof(type, field)
 
+
 /* 与getline交互*/
 typedef struct {
     char *buffer;
@@ -47,19 +48,11 @@ typedef enum {
     STATEMENT_DELETE
 } statement_type;
 
-#define COLUMN_SOURCE_SIZE 32
-#define COLUMN_CONTENT_SIZE 128
-typedef struct {
-    time_t time;    // 日志时间
-    char source[COLUMN_SOURCE_SIZE + 1];    // 日志来源
-    char content[COLUMN_CONTENT_SIZE + 1];  // 日志内容
-} row_t;
 
 
-typedef struct table_t {
-    BTree* tree;    // 对应一个tree
-    row_t* row; // 表行格式
-} table_t;
+
+
+
 
 void close_input_buffer(input_buffer_t* input_buffer);
 
@@ -69,9 +62,9 @@ void close_input_buffer(input_buffer_t* input_buffer);
  * 2. 关闭db file
  * 3. 释放table， pager
  * */
-void db_close(table_t *table)
+void db_close(Table *table)
 {
-    pager_t *pager = btree_get_pager(table->tree);
+    Pager *pager = btree_get_pager(table->tree);
     assert(pager);
     assert(table);
 
@@ -98,16 +91,16 @@ void db_close(table_t *table)
 
 
 
-void print_row(row_t *row)
+void print_row(Row *row)
 {
     printf("(%d, %s, %s)\n", row->time, row->source, row->content);
 }
 
 /* 从内存读,  source 为 一行的起始地址*/
-void deserialize_row(void* src, row_t* destination) {
-    memcpy(&(destination->time), src +  FIELD_OFFSET(row_t, time), FIELD_SIZE(row_t, time));
-    memcpy(&(destination->source), src + FIELD_OFFSET(row_t, source), FIELD_SIZE(row_t, source));
-    memcpy(&(destination->content), src +  FIELD_OFFSET(row_t, content),  FIELD_SIZE(row_t, content));
+void deserialize_row(void* src, Row* destination) {
+    memcpy(&(destination->time), src +  FIELD_OFFSET(Row, time), FIELD_SIZE(Row, time));
+    memcpy(&(destination->source), src + FIELD_OFFSET(Row, source), FIELD_SIZE(Row, source));
+    memcpy(&(destination->content), src +  FIELD_OFFSET(Row, content),  FIELD_SIZE(Row, content));
 }
 
 
@@ -119,12 +112,12 @@ void deserialize_row(void* src, row_t* destination) {
  * 3. 初始化table
  * 4. 初始化page0 ， 根节点
  * */
-table_t *db_open(const char *file_name)
+Table *db_open(const char *file_name)
 {
-    pager_t *pager = pager_open(file_name);
-    uint32_t num_rows = pager_get_file_length(pager) / sizeof(row_t);
+    Pager *pager = pager_open(file_name);
+    uint32_t num_rows = pager_get_file_length(pager) / sizeof(Row);
 
-    table_t *table = (table_t *) malloc(sizeof(table_t));
+    Table *table = (Table *) malloc(sizeof(Table));
     table->pager = pager;
     table->root_page_num = 0;
 
@@ -140,7 +133,7 @@ table_t *db_open(const char *file_name)
 
 
 /*处理源命令*/
-meta_cmd_res do_meta_command(input_buffer_t *input_buffer, table_t *table)
+meta_cmd_res do_meta_command(input_buffer_t *input_buffer, Table *table)
 {
     if (strcmp(input_buffer->buffer, ".exit") == 0) {
         close_input_buffer(input_buffer);
@@ -241,7 +234,7 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
     char *file_name = argv[1];
-    table_t *table = db_open(file_name);
+    g_table = db_open(file_name);
     input_buffer_t *input_buffer = new_input_buffer();
     //printf("PAGES: %u, ROWS-PAGE: %u, ROW-SIZE :%u\n", TABLE_MAX_PAGES, ROWS_PER_PAGE, ROW_SIZE);
     while (true) {

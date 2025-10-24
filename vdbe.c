@@ -1,43 +1,14 @@
 /**
  * Virtual DataBase Engine
  */
-#include "vdbe.h"
 #include <stdio.h>
-#include "y.tab.h"
 #include <stdint.h>
+#include <stdlib.h>
 #include "btree.h"
 #include "sql4code.h"
+#include "vdbe.h"
+#include "bytecode.h"
 
-struct sql_statement{
-
-    // 指令数组
-    size_t ints_size;
-    Intstruction* ints;
-};
-
-union P4_t
-{   
-    int32_t i32;
-    int64_t il64;
-    double f64; // 64-bit float value
-    const char* s;  // string
-    const char* blob;   // Binary large object 二进制大对象。“\x2b11..”
-    // ....
-};
-
-struct Intstruction {
-    int opcode;
-    int32_t p1;
-    int32_t p2;
-    int32_t p3;
-    union P4_t p4;
-
-};
-struct Intstruction iss[100];
-int size = 0;
-const char* opcode_str[] = {
-    "OP_DELETE", "OP_OPEN", "OP_WHERE", "OP_HALT"
-};
 void emit(int opcode, int32_t p1, int32_t p2, int32_t p3, union P4_t p4)
 {
     iss[size].opcode = opcode;
@@ -63,7 +34,7 @@ void format_printf(int addr, const char* opcode,
 /*
  * virtual machines
  * */
-SQL4_CODE execute_statement(sql_statement *statement, table_t *table)
+SQL4_CODE execute_statement(sql_statement *statement, Table *table)
 {
     switch (statement->type) {
         case STATEMENT_INSERT:
@@ -83,9 +54,9 @@ SQL4_CODE execute_statement(sql_statement *statement, table_t *table)
 /**
  * @brief 执行select
  */
-SQL4_CODE execute_select(sql_statement * statement, table_t * table)
+SQL4_CODE execute_select(sql_statement * statement, Table * table)
 {
-    row_t row;
+    Row row;
     size_t selectsize;
     uint8_t** data;
 
@@ -100,9 +71,9 @@ SQL4_CODE execute_select(sql_statement * statement, table_t * table)
 /**
  * @brief 执行insert
  */
-SQL4_CODE execute_insert(sql_statement* statement, table_t* table)
+SQL4_CODE execute_insert(sql_statement* statement, Table* table)
 {
-    row_t* row = &(statement->row);
+    Row* row = &(statement->row);
     uint32_t key = row->time;
     if (btree_insert(table->tree, key, row, sizeof(row)) != BTREE_INSERT_SUCCESS) {
         fprintf(stderr, "btree insert error: %d", sql4_errno);
@@ -118,7 +89,7 @@ SQL4_CODE execute_insert(sql_statement* statement, table_t* table)
  * @param table 
  * @return SQL4_CODE 
  */
-SQL4_CODE execute_delete(sql_statement *statement, table_t *table)
+SQL4_CODE execute_delete(sql_statement *statement, Table *table)
 {
     time_t time = statement->row.time;
     time_t key = time;
@@ -129,30 +100,8 @@ SQL4_CODE execute_delete(sql_statement *statement, table_t *table)
     return EXECUTE_SUCCESS;
 }
 
-
-
-
-
-
-int main()
+// 运行字节码
+void vdbe_run()
 {
-    if (retcode == 0) {
-        printf("%6s %12s %4s %4s %20s\n", 
-            "addr", "opcode", "p1", "p2", "comment"
-        );
-        printf("%6s %12s %4s %4s %20s\n",
-            "------", "------------", "----",  "----", 
-            "------------------------"
-        );
-        for(int i = 0; i < size; i++) {
-            format_printf(i, opcode_str[iss[i].opcode],
-                iss[i].arg1 ? iss[i].arg1 : "NULL",
-                iss[i].arg2, "comment_"
-            );
-        }
-    } else {
-        printf("err: yyparse retcode %d", retcode);
-    }
-
-    return retcode;
+    bytecode_generate();
 }

@@ -1,36 +1,30 @@
 #include "pager.h"
 
-/*使用 pager 访问页缓存和文件*/
-struct pager_t{
-    int fd;
-    uint32_t file_length; // 追加写。 写的起始位置. 是page_size 整数倍
-    uint32_t num_pages; // 页个数
-    void *pages[TABLE_MAX_PAGES];
-} ;
 
-int pager_get_fd(pager_t* p)
+
+int pager_get_fd(Pager* p)
 {
     return p->fd;
 }
-uint32_t pager_get_file_length(pager_t* p)
+uint32_t pager_get_file_length(Pager* p)
 {
     return p->file_length;
 }
-uint32_t pager_get_num_pages(pager_t* p)
+uint32_t pager_get_num_pages(Pager* p)
 {
     return p->num_pages;
 }
-void* pager_get_pages(pager_t* p)
+void* pager_get_pages(Pager* p)
 {
     return p->pages;
 }
 
 /* page */
-void* pager_get_page(pager_t* p, uint32_t page_num)
+void* pager_get_page(Pager* p, uint32_t page_num)
 {
     return p->pages[page_num];
 }
-void pager_free_page(pager_t* p, uint32_t page_num)
+void pager_free_page(Pager* p, uint32_t page_num)
 {
     void* page = pager_get_page(p, page_num);
     assert(page);
@@ -39,7 +33,7 @@ void pager_free_page(pager_t* p, uint32_t page_num)
 }
 
 /* 总是假设 0..num_pages-1 已经被分配，*/
-uint8_t pager_get_unused_page_num(pager_t *pager)
+uint8_t pager_get_unused_page_num(Pager *pager)
 {
     return pager->num_pages;
 }
@@ -52,7 +46,7 @@ uint8_t pager_get_unused_page_num(pager_t *pager)
  * @param page_num ：
  * @return void* ：一个page
  */
-void *pager_get_page(pager_t* pager, uint8_t page_num)
+void *pager_get_page(Pager* pager, uint8_t page_num)
 {
     if (page_num >= TABLE_MAX_PAGES) {
         printf("Tried to fetch page number out of bounds. %d > %d\n", page_num,
@@ -89,7 +83,7 @@ void *pager_get_page(pager_t* pager, uint8_t page_num)
 /*
  * 打开文件， 初始化pager
  * */
-pager_t *pager_open(const char *file_name)
+Pager *pager_open(const char *file_name)
 {
     // 文件读写， 文件所有者读写权限
     int fd = open(file_name, O_RDWR|O_CREAT, S_IWUSR|S_IRUSR);
@@ -102,7 +96,7 @@ pager_t *pager_open(const char *file_name)
     if (file_length == -1) {
         perror("can't seek");
     }
-    pager_t *pager = (pager_t *) malloc(sizeof(pager_t));
+    Pager *pager = (Pager *) malloc(sizeof(Pager));
     pager->fd = fd;
     pager->file_length = file_length;
     pager->num_pages = file_length / PAGE_SIZE; // 初始化为最大page个数
@@ -122,7 +116,7 @@ pager_t *pager_open(const char *file_name)
 /* 将page刷盘
  * 整页刷盘， cell不会跨page
  * */
-void pager_flush(pager_t *pager, uint8_t page_num)
+void pager_flush(Pager *pager, uint8_t page_num)
 {
 #ifdef DEBUG
     // printf("pager flush %u\n", page_num);

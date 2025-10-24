@@ -8,15 +8,21 @@
 #include <assert.h>
 #include "sql4limit.h"
 
-typedef struct pager_t pager_t;
+/*使用 pager 访问页缓存和文件*/
+typedef struct {
+    int fd;
+    uint32_t file_length; // 追加写。 写的起始位置. 是page_size 整数倍
+    uint32_t num_pages; // 页个数
+    void *pages[TABLE_MAX_PAGES];
+} Pager;
 
-pager_t *pager_open(const char *file_name);
+Pager *pager_open(const char *file_name);
 
-int pager_get_fd(pager_t* p);
-uint32_t pager_get_file_length(pager_t* p);
-uint32_t pager_get_num_pages(pager_t* p);
+int pager_get_fd(Pager* p);
+uint32_t pager_get_file_length(Pager* p);
+uint32_t pager_get_num_pages(Pager* p);
 
 /* page */
-void* pager_get_page(pager_t* p, uint32_t page_num);
-void pager_free_page(pager_t* p, uint32_t page_num);
-uint8_t pager_get_unused_page_num(pager_t *pager);
+void* pager_get_page(Pager* p, uint32_t page_num);
+void pager_free_page(Pager* p, uint32_t page_num);
+uint8_t pager_get_unused_page_num(Pager *pager);

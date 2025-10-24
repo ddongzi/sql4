@@ -26,6 +26,7 @@ struct StmtList {
     struct Stmt** items;
     int nstmt;
 };
+extern struct StmtList* root;
 
 // 目前 SELECT a,b from tb1;
 struct Stmt* newStmt(enum StmtType type, void* st);
