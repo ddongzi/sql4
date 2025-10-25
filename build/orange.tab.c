@@ -67,18 +67,18 @@
 
 
 /* First part of user prologue.  */
-#line 4 "sql.y"
+#line 4 "orange.y"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
-#include "sql.h"
+#include "orange.h"
 int yylex(void);  // flex
 void yyerror(char* s, ...);
 extern struct StmtList* root;
 
-#line 82 "sql.tab.c"
+#line 82 "build/orange.tab.c"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -101,7 +101,7 @@ extern struct StmtList* root;
 #  endif
 # endif
 
-#include "sql.tab.h"
+#include "orange.tab.h"
 /* Symbol kind.  */
 enum yysymbol_kind_t
 {
@@ -1076,69 +1076,69 @@ yyreduce:
   switch (yyn)
     {
   case 2: /* input: stmt_list EOL  */
-#line 39 "sql.y"
+#line 39 "orange.y"
                       {  }
-#line 1082 "sql.tab.c"
+#line 1082 "build/orange.tab.c"
     break;
 
   case 3: /* input: EOL  */
-#line 40 "sql.y"
+#line 40 "orange.y"
               {}
-#line 1088 "sql.tab.c"
+#line 1088 "build/orange.tab.c"
     break;
 
   case 4: /* stmt_list: stmt  */
-#line 42 "sql.y"
+#line 42 "orange.y"
                   { stmtListAdd(root, (yyvsp[0].stmtVal));  (yyval.stmtListVal) = root;}
-#line 1094 "sql.tab.c"
+#line 1094 "build/orange.tab.c"
     break;
 
   case 5: /* stmt_list: stmt_list stmt  */
-#line 43 "sql.y"
+#line 43 "orange.y"
                           { stmtListAdd((yyvsp[-1].stmtListVal), (yyvsp[0].stmtVal)); (yyval.stmtListVal) = (yyvsp[-1].stmtListVal); }
-#line 1100 "sql.tab.c"
+#line 1100 "build/orange.tab.c"
     break;
 
   case 6: /* stmt: select_stmt  */
-#line 46 "sql.y"
+#line 46 "orange.y"
                   { (yyval.stmtVal) = newStmt(STMT_SELECT, (yyvsp[0].selectStmtVal));}
-#line 1106 "sql.tab.c"
+#line 1106 "build/orange.tab.c"
     break;
 
   case 7: /* select_stmt: SELECT expr_list FROM table_ref ';'  */
-#line 48 "sql.y"
+#line 48 "orange.y"
                                                  {
                 (yyval.selectStmtVal) = newSelectStmt((yyvsp[-3].exprListVal), (yyvsp[-1].tabRefVal));
         }
-#line 1114 "sql.tab.c"
+#line 1114 "build/orange.tab.c"
     break;
 
   case 8: /* table_ref: NAME  */
-#line 52 "sql.y"
+#line 52 "orange.y"
                 { (yyval.tabRefVal) = newTableRef((yyvsp[0].strval)); }
-#line 1120 "sql.tab.c"
+#line 1120 "build/orange.tab.c"
     break;
 
   case 9: /* expr: NAME  */
-#line 54 "sql.y"
+#line 54 "orange.y"
            { (yyval.exprVal) = newExpr((yyvsp[0].strval)); }
-#line 1126 "sql.tab.c"
+#line 1126 "build/orange.tab.c"
     break;
 
   case 10: /* expr_list: expr  */
-#line 58 "sql.y"
+#line 58 "orange.y"
                 { (yyval.exprListVal) = newExprList((yyvsp[0].exprVal)); }
-#line 1132 "sql.tab.c"
+#line 1132 "build/orange.tab.c"
     break;
 
   case 11: /* expr_list: expr_list ',' expr  */
-#line 59 "sql.y"
+#line 59 "orange.y"
                                { exprListAdd((yyvsp[-2].exprListVal), (yyvsp[0].exprVal)); (yyval.exprListVal) = (yyvsp[-2].exprListVal); }
-#line 1138 "sql.tab.c"
+#line 1138 "build/orange.tab.c"
     break;
 
 
-#line 1142 "sql.tab.c"
+#line 1142 "build/orange.tab.c"
 
       default: break;
     }
@@ -1331,8 +1331,7 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 62 "sql.y"
+#line 62 "orange.y"
 
 
-/*===c代码===*/
 

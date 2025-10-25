@@ -1,23 +1,16 @@
-#include "orange/sql.h"
+#include "orange.h"
 #include "sql4code.h"
-#include "vdbe.h"
 #include "btree.h"
 #include "table.h"
+#include "bytecode.h"
+#include "vdbe.h"
 
-static SQL4_CODE exprlist(struct ExprList* exprls,  struct InstructionList* inslist)
-{
-    for (int i = 0; i < exprls->nexpr; i++)
-    {
-        // 最小了
-        struct Expr* expr = exprls->items[i];
-    }
-    
-}
-static Intstruction* init()
+ Intstruction* bytecode_init()
 {
     Intstruction* ins = vdbe_new_ins(Init, 0, 0, 0, (union P4_t){0});
+    return ins;
 }
-static Intstruction* openread(char* tabname)
+ Intstruction* bytecode_openread(char* tabname)
 {
     Cursor* csr = btree_cursor_start(g_table->tree);
     int pagenum = csr->btree->root_page_num;
@@ -30,7 +23,7 @@ static Intstruction* openread(char* tabname)
     Intstruction* ins = vdbe_new_ins(OpenRead, 0, pagenum, 0, (union P4_t){0});
     return ins;
 }
-static Intstruction* rewind()
+ Intstruction* bytecode_rewind()
 {
     /**
      * P1: cursor编号
@@ -41,7 +34,7 @@ static Intstruction* rewind()
     Intstruction* ins = vdbe_new_ins(Rewind, 0, 0, 0, (union P4_t){0});
     return ins;
 }
-static Intstruction* column(char* colname)
+ Intstruction* bytecode_column(char* colname)
 {
     /**
      * P1: cursor编号
@@ -53,7 +46,7 @@ static Intstruction* column(char* colname)
     Intstruction* ins = vdbe_new_ins(Column, 0, 1, 0, (union P4_t){0});
     return ins;
 }
-static Intstruction* next()
+ Intstruction* bytecode_next()
 {
     /**
      * P1: cursor编号
@@ -62,9 +55,9 @@ static Intstruction* next()
      * P4: 0 not used
      */
     Intstruction* ins = vdbe_new_ins(Next, 0, 0, 0, (union P4_t){0});
-    return next;
+    return ins;
 }
-static Intstruction* halt()
+ Intstruction* bytecode_halt()
 {
     /**
      * P1: 0 not used
@@ -74,45 +67,49 @@ static Intstruction* halt()
      */
     // 结束指令流运行
     Intstruction* ins = vdbe_new_ins(Halt, 0, 0, 0, (union P4_t){0});
-    return next;
+    return ins;
 }
-static void select(struct SelectStmt* selectst, struct InstructionList* inslist)
+ void bytecode_select(struct SelectStmt* selectst, InstructionList* inslist)
 {
     char* tabname = selectst->table_ref->name;
     Intstruction* ins;
-    ins = init();
+    ins = bytecode_init();
     vdbe_inslist_add(inslist, ins);
 
-    ins = openread(tabname);
+    ins = bytecode_openread(tabname);
     vdbe_inslist_add(inslist, ins);
 
-    ins = rewind();
+    ins = bytecode_rewind();
     vdbe_inslist_add(inslist, ins); // TODO p2 待定，需要halt地址
 
     for (int i = 0; i < selectst->col_list->nexpr; i++)
     {
         struct Expr* expr = selectst->col_list->items[i];
-        ins = column(expr->name);
+        ins = bytecode_column(expr->name);
         vdbe_inslist_add(inslist, ins);
     }    
-    ins = next();
+    ins = bytecode_next();
     vdbe_inslist_add(inslist, ins); // TODO p2 待定
 
-    ins = halt();
+    ins = bytecode_halt();
     vdbe_inslist_add(inslist, ins);
 }
 
 
 // 将root ast翻译成指令， 放在inslist，
-void bytecode_generate(struct StmtList* root, struct InstructionList* inslist)
+void bytecode_generate(SqlPrepareContext* sqlctx)
 {
+    AST* root = sqlctx->ast;
+    InstructionList* inslist = vdbe_new_inslist();
+    sqlctx->inslist = inslist;
+    
     for (int i = 0; i < root->nstmt; i++)
     {
         struct Stmt* stmt = root->items[i];
         switch (stmt->type)
         {
         case STMT_SELECT:
-            select((struct SelectStmt* )(stmt->st), inslist);
+            bytecode_select((struct SelectStmt* )(stmt->st), inslist);
             break;
         
         default:

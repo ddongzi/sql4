@@ -1,24 +1,15 @@
-# Makefile
-
-# 目标名称
-TARGET = db
-
-# 源文件
-SRC = main.c pager.c
-
-# 编译器
-CC = gcc
-
-# 编译选项
-CFLAGS = -Wall -Wextra -DDEBUG -g 
-
-# 默认目标
-all: $(TARGET)
-
-# 目标规则
-$(TARGET): $(SRC)
-	$(CC) $(CFLAGS) $(SRC) -o $(TARGET)
-
-# 清理目标
+sql4: btree.c bytecode.c db.c main.c orange.c pager.c vdbe.c\
+	sql4code.h sql4limit.h table.h\
+	build/orange.tab.c build/orange_lex.yy.c
+	gcc -o sql4 btree.c bytecode.c db.c main.c orange.c pager.c vdbe.c\
+		sql4code.h sql4limit.h table.h\
+		build/orange.tab.c build/orange_lex.yy.c\
+		-Ibuild -I. -lfl 
+build/orange.tab.c: orange.y
+	mkdir -p build
+	bison -d -Wcounterexamples -o build/orange.tab.c orange.y
+build/orange_lex.yy.c: orange.l build/orange.tab.c
+	mkdir -p build
+	flex --header-file=build/orange_lex.yy.h -o build/orange_lex.yy.c orange.l
 clean:
-	rm -f $(TARGET)
+	rm -rf build sql4

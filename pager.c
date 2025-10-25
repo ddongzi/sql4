@@ -1,29 +1,12 @@
 #include "pager.h"
 
 
-
-int pager_get_fd(Pager* p)
-{
-    return p->fd;
-}
-uint32_t pager_get_file_length(Pager* p)
-{
-    return p->file_length;
-}
-uint32_t pager_get_num_pages(Pager* p)
-{
-    return p->num_pages;
-}
 void* pager_get_pages(Pager* p)
 {
     return p->pages;
 }
 
 /* page */
-void* pager_get_page(Pager* p, uint32_t page_num)
-{
-    return p->pages[page_num];
-}
 void pager_free_page(Pager* p, uint32_t page_num)
 {
     void* page = pager_get_page(p, page_num);
@@ -33,7 +16,7 @@ void pager_free_page(Pager* p, uint32_t page_num)
 }
 
 /* 总是假设 0..num_pages-1 已经被分配，*/
-uint8_t pager_get_unused_page_num(Pager *pager)
+uint8_t pager_get_unused_pagenum(Pager *pager)
 {
     return pager->num_pages;
 }

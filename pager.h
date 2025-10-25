@@ -1,3 +1,6 @@
+#ifndef PAGER_H
+#define PAGER_H
+
 #include <stdint.h>
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -17,12 +20,11 @@ typedef struct {
 } Pager;
 
 Pager *pager_open(const char *file_name);
-
-int pager_get_fd(Pager* p);
-uint32_t pager_get_file_length(Pager* p);
-uint32_t pager_get_num_pages(Pager* p);
+void *pager_get_page(Pager* pager, uint8_t page_num);
+void pager_flush(Pager *pager, uint8_t page_num);
 
 /* page */
-void* pager_get_page(Pager* p, uint32_t page_num);
 void pager_free_page(Pager* p, uint32_t page_num);
-uint8_t pager_get_unused_page_num(Pager *pager);
+uint8_t pager_get_unused_pagenum(Pager *pager);
+
+#endif // PAGER_H

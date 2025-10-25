@@ -9,99 +9,78 @@
 #include "vdbe.h"
 #include "bytecode.h"
 
-void emit(int opcode, int32_t p1, int32_t p2, int32_t p3, union P4_t p4)
+Intstruction* vdbe_new_ins(int opcode, int32_t p1, int32_t p2, int32_t p3, union P4_t p4)
 {
-    iss[size].opcode = opcode;
-    iss[size].p1 = p1;
-    iss[size].p2 = p2;
-    iss[size].p3 = p3;
-    iss[size].p4 = p4;
-    size++;
+    Intstruction* ins = malloc(sizeof(Intstruction));
+    ins->opcode = opcode;
+    ins->p1 = p1;
+    ins->p2 = p2;
+    ins->p3 = p3;
+    ins->p4 = p4;
+    return ins;
 }
-
-void format_printf(int addr, const char* opcode, 
-    char* p1, int p2, const char* comment
-    )
+InstructionList* vdbe_new_inslist()
 {
-    printf("%6d %12s %4s %4d %20s\n", 
-        addr, opcode, p1, p2, comment
-    );  
+    InstructionList* inslist = malloc(sizeof(InstructionList));
+    inslist->nints = 0;
+    inslist->ints = NULL;
+    return inslist;
 }
-
-
-// TODO 通过complier 转化sql语句为 bytecode, 放在vdbe执行。
-
-/*
- * virtual machines
- * */
-SQL4_CODE execute_statement(sql_statement *statement, Table *table)
+void vdbe_inslist_add(InstructionList* inslist, Intstruction* ins)
 {
-    switch (statement->type) {
-        case STATEMENT_INSERT:
-            return execute_insert(statement, table);
-        case STATEMENT_SELECT:
-            return execute_select(statement, table);
-        case STATEMENT_DELETE:
-            return execute_delete(statement, table);
-        default:
-            perror("unkown execute type");
-            return EXECUTE_UNKNOWN_ERR;
-    }
+    inslist->ints = realloc(inslist->ints, sizeof(Intstruction*) * (inslist->nints + 1));
+    inslist->ints[inslist->nints] = ins;
+    inslist->nints += 1;
 }
 
 
-
-/**
- * @brief 执行select
- */
-SQL4_CODE execute_select(sql_statement * statement, Table * table)
+void print_ins(int addr, const char *opcode,
+                   char *p1, int p2, const char *comment)
 {
-    Row row;
-    size_t selectsize;
-    uint8_t** data;
-
-    if (btree_select(table->tree, &selectsize, data) != BTREE_SELECT_SUCCESS) {
-        fprintf(stderr, "btree select err: %d", sql4_errno);
-        return EXECUTE_ERR;
-    }
-    // TODO data print
-    return EXECUTE_SUCCESS;
-}
-
-/**
- * @brief 执行insert
- */
-SQL4_CODE execute_insert(sql_statement* statement, Table* table)
-{
-    Row* row = &(statement->row);
-    uint32_t key = row->time;
-    if (btree_insert(table->tree, key, row, sizeof(row)) != BTREE_INSERT_SUCCESS) {
-        fprintf(stderr, "btree insert error: %d", sql4_errno);
-        return EXECUTE_ERR;
-    }
-    return EXECUTE_SUCCESS;
-}
-
-/**
- * @brief 通过id找到cell，请0文本，移除cell
- * 
- * @param statement 
- * @param table 
- * @return SQL4_CODE 
- */
-SQL4_CODE execute_delete(sql_statement *statement, Table *table)
-{
-    time_t time = statement->row.time;
-    time_t key = time;
-
-    if (btree_delete(table->tree, key) != BTREE_DELETE_SUCCESS) {
-        fprintf(stderr, "btree delete err: %d", sql4_errno);
-    }
-    return EXECUTE_SUCCESS;
+    printf("%6d %12s %4s %4d %20s\n",
+           addr, opcode, p1, p2, comment);
 }
 
 // 运行字节码
-void vdbe_run()
+void vdbe_run(SqlPrepareContext *sqlctx)
 {
-    bytecode_generate();
+    Intstruction *ins;
+    InstructionList *inslist = sqlctx->inslist;
+    for (size_t pc = 0; pc < inslist->nints; pc++)
+    {
+        ins = sqlctx->inslist->ints[pc];
+        switch (ins->opcode)
+        {
+        case Init:
+            pc++;
+            break;
+        case OpenRead:
+            pc++;
+            break;
+        case Rewind:
+            pc++;
+            break;
+            ;
+        case Column:
+            pc++;
+            break;
+        case ResultRow:
+            pc++;
+            break;
+        case Next:
+            pc++;
+            break;
+        case Halt:
+            pc++;
+            break;
+        case Transaction:
+            pc++;
+            break;
+        case Goto:
+            pc = ins->p1;
+            break;
+        default:
+            break;
+        }
+    }
 }

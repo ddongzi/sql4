@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
-#include "sql.h"
+#include "orange.h"
 int yylex(void);  // flex
 void yyerror(char* s, ...);
 extern struct StmtList* root;
@@ -61,5 +61,4 @@ expr_list: expr { $$ = newExprList($1); }
 
 %%
 
-/*===c代码===*/
 

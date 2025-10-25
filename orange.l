@@ -3,7 +3,7 @@
 %{
 #include <string.h>
 #include <stdarg.h>
-#include "sql.tab.h"
+#include "build/orange.tab.h"
 void yyerror(char* s, ...);
 %}
 

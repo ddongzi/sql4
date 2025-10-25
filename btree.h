@@ -1,9 +1,16 @@
+#ifndef BTREE_H
+#define BTREE_H
+
 #include <stdbool.h>
 #include "pager.h"
 
 #include "sql4code.h"
 /* 根据 architecture of sqlite. Backend: btree=>pager=>os*/
-/* BTree 内容非完全内存化， 需要通过pager 读取*/
+
+/**
+ * btree实现是通过偏移量做的，没有常规的真正的树结构体；
+ * Btree只是保存btree的基本信息，提供外部接口而已。
+ */
 typedef struct  {
     uint32_t root_page_num; // B-tree 根节点所在页
     Pager* pager;
@@ -21,14 +28,17 @@ typedef struct {
     bool end_of_table; // 帮助insert
 }Cursor ;
 
-Pager* btree_get_pager(BTree* tree);
+BTree* btree_create(uint32_t root_pagenum, Pager* pager);
 
 Cursor *btree_cursor_start(BTree *tree);
 Cursor *btree_cursor_find(BTree *tree, uint32_t key);
 void btree_cursor_advance(Cursor *cursor);
 uint8_t* btree_cursor_value(Cursor *cursor);
-bool btree_cursor_is_end_of_table(Cursor* cursor);
 
 SQL4_CODE btree_insert(BTree* tree, uint32_t key, uint8_t* data, size_t datalen);
 SQL4_CODE btree_select(BTree* tree, size_t* selectsize, uint8_t** data);
 SQL4_CODE btree_delete(BTree* tree, uint32_t key);
+
+void btree_print(BTree * tree);
+
+#endif

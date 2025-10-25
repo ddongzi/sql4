@@ -1,1 +1,8 @@
-void bytecode_generate(struct StmtList* root, struct InstructionList* inslist);
+#ifndef BYTECODE_H
+#define BYTECODE_H
+
+#include "vdbe.h"
+
+void bytecode_generate(SqlPrepareContext* sqlctx);
+
+#endif

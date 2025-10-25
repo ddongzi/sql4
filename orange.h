@@ -1,6 +1,9 @@
+#ifndef ORANGE_H
+#define ORANGE_H
+#include <stdarg.h>
+#include "vdbe.h"
+
 // 嵌套结构体本身就是树
-
-
 struct Expr {
     char* name;
 };
@@ -27,6 +30,7 @@ struct StmtList {
     int nstmt;
 };
 extern struct StmtList* root;
+typedef struct StmtList AST; // 对外类型
 
 // 目前 SELECT a,b from tb1;
 struct Stmt* newStmt(enum StmtType type, void* st);
@@ -38,3 +42,8 @@ struct TableRef* newTableRef(char* name);
 struct ExprList* newExprList(struct Expr* item); // 一个个添加，刚开始是一个
 void exprListAdd(struct ExprList* exprs, struct Expr* item); // 一个个添加，刚开始是一个
 
+void orange_parse(SqlPrepareContext* sqlctx);
+void yyerror(char* s, ...);
+
+
+#endif

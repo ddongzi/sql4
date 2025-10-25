@@ -1,8 +1,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include "sql.h"
-#include "sql.tab.h"
+#include "vdbe.h"
+#include "orange.h"
+#include "build/orange.tab.h"
+#include "build/orange_lex.yy.h"
 
 struct StmtList* root;
 
@@ -109,16 +111,37 @@ static void printStmtList(struct StmtList* stlist)
     }
     
 }
+void orange_free()
+{
+
+}
 void yyerror(char* s, ...)
 {
-        fprintf(stderr, "error:%s\n", s);
+    fprintf(stderr, "error:%s\n", s);
 }
-int main(int argc, char** argv)
+void orange_parse(SqlPrepareContext* sqlctx)
 {
+    // flex没有生成头文件，所以这里报提示
+    YY_BUFFER_STATE buffer = yy_scan_string(sqlctx->sql);
     root = malloc(sizeof(struct StmtList));
     root->nstmt = 0;
     yydebug = 1;
     yyparse();
+    sqlctx->ast = root;
     printStmtList(root);
-    return 0;
+    yy_delete_buffer(buffer);
 }
+// // for test!
+// void yyerror(char* s, ...)
+// {
+//         fprintf(stderr, "error:%s\n", s);
+// }
+// int main(int argc, char** argv)
+// {
+//     root = malloc(sizeof(struct StmtList));
+//     root->nstmt = 0;
+//     yydebug = 1;
+//     yyparse();
+//     printStmtList(root);
+//     return 0;
+// }

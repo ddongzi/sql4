@@ -485,11 +485,11 @@ int yy_flex_debug = 0;
 #define YY_MORE_ADJ 0
 #define YY_RESTORE_YY_MORE_OFFSET
 char *yytext;
-#line 1 "sql.l"
-#line 4 "sql.l"
+#line 1 "orange.l"
+#line 4 "orange.l"
 #include <string.h>
 #include <stdarg.h>
-#include "sql.tab.h"
+#include "build/orange.tab.h"
 void yyerror(char* s, ...);
 #line 495 "lex.yy.c"
 #line 496 "lex.yy.c"
@@ -709,7 +709,7 @@ YY_DECL
 		}
 
 	{
-#line 10 "sql.l"
+#line 10 "orange.l"
 
 
 #line 716 "lex.yy.c"
@@ -781,52 +781,52 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 12 "sql.l"
+#line 12 "orange.l"
 {  return SELECT;}
 	YY_BREAK
 case 2:
-#line 14 "sql.l"
+#line 14 "orange.l"
 case 3:
-#line 15 "sql.l"
+#line 15 "orange.l"
 case 4:
 YY_RULE_SETUP
-#line 15 "sql.l"
+#line 15 "orange.l"
 {  return yytext[0];}
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 16 "sql.l"
+#line 16 "orange.l"
 {  return FROM; }
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 18 "sql.l"
+#line 18 "orange.l"
 { printf("flex: %s\n", yytext); yylval.strval = yytext; return NAME;}
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 20 "sql.l"
+#line 20 "orange.l"
 {   yylval.intval = atoi(yytext); return INTNUM; }
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 22 "sql.l"
+#line 22 "orange.l"
 {  }   //忽略
 	YY_BREAK
 case 9:
 /* rule 9 can match eol */
 YY_RULE_SETUP
-#line 25 "sql.l"
+#line 25 "orange.l"
 {  return EOL;} 
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 27 "sql.l"
+#line 27 "orange.l"
 { printf("mstery ignore %c\n", yytext[0]); }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 29 "sql.l"
+#line 29 "orange.l"
 YY_FATAL_ERROR( "flex scanner jammed" );
 	YY_BREAK
 #line 833 "lex.yy.c"
@@ -1846,7 +1846,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 29 "sql.l"
+#line 29 "orange.l"
 
 
 

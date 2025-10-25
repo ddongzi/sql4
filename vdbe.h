@@ -1,5 +1,11 @@
+#ifndef VDBE_H
+#define VDBE_H
 
+#include <stdlib.h>
+#include <unistd.h>
 #include <stdint.h>
+
+typedef struct StmtList AST; // 向前声明
 
 union P4_t
 {   
@@ -12,7 +18,6 @@ union P4_t
 };
 
 typedef struct  {
-    int addr;
     int opcode;
     int32_t p1;
     int32_t p2;
@@ -33,9 +38,9 @@ enum OPCode{
 
 typedef struct{
     // 指令数组
-    size_t ints_size;
-    Intstruction* ints;
-} IntstructionList;
+    size_t nints;
+    Intstruction* *ints;
+} InstructionList;
 
 // 寄存器，存储临时数据
 typedef struct {
@@ -49,7 +54,18 @@ typedef struct {
 } Register;
 extern Register g_registers[16]; // 声明vdb全局寄存器
 
+// 全局处理的上下文，从input输入，到编译 ast， 到字节码列表
+typedef struct {
+    char* sql;  // sql语句
+    AST* ast;   // 对应语法树
+    InstructionList* inslist; // 对应字节码列表
+} SqlPrepareContext;
+
+void vdbe_run(SqlPrepareContext* );
+
 Intstruction* vdbe_new_ins(int opcode, int32_t p1, int32_t p2, int32_t p3, union P4_t p4);
 
-IntstructionList* vdbe_new_inslist();
-void vdbe_inslist_add(IntstructionList*, Intstruction*);
+InstructionList* vdbe_new_inslist();
+void vdbe_inslist_add(InstructionList*, Intstruction*);
+
+#endif
