@@ -23,6 +23,17 @@
     Intstruction* ins = vdbe_new_ins(OpenRead, 0, pagenum, 0, (union P4_t){0});
     return ins;
 }
+ Intstruction* bytecode_resultrow()
+ {
+    /**
+     * P1: 寄存器序号
+     * P2: 寄存器序号
+     * p3: 0 not used
+     * p4: 0 not used 
+     */
+    Intstruction* ins = vdbe_new_ins(ResultRow, 0, 1, 0, (union P4_t){0});
+    return ins;
+ }
  Intstruction* bytecode_rewind()
 {
     /**
@@ -95,10 +106,10 @@
     vdbe_inslist_add(inslist, ins);
 }
 
-
 // 将root ast翻译成指令， 放在inslist，
 void bytecode_generate(SqlPrepareContext* sqlctx)
 {
+    printf("Bytecode generate for sql: [%s]\n", sqlctx->sql);
     AST* root = sqlctx->ast;
     InstructionList* inslist = vdbe_new_inslist();
     sqlctx->inslist = inslist;
@@ -116,5 +127,4 @@ void bytecode_generate(SqlPrepareContext* sqlctx)
             break;
         }
     }
-    
 }

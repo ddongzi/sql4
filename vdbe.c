@@ -34,18 +34,71 @@ void vdbe_inslist_add(InstructionList* inslist, Intstruction* ins)
 }
 
 
-void print_ins(int addr, const char *opcode,
-                   char *p1, int p2, const char *comment)
+void print_inslist(InstructionList* inslist)
 {
-    printf("%6d %12s %4s %4d %20s\n",
-           addr, opcode, p1, p2, comment);
-}
 
+    printf("Instruction List:\n");
+    printf("%4s %10s %6s %6s %6s %6s\n", "Addr", "Opcode", "P1", "P2", "P3", "P4");
+    Intstruction *ins;
+    for (int i = 0; i < inslist->nints; i++)
+    {
+        ins = inslist->ints[i];
+        printf("%4d ", i);
+        switch (ins->opcode)
+            {
+            case Init:
+                printf("%10s ", "Init");
+                break;
+            case OpenRead:
+                printf("%10s ", "OpenRead");
+                break;
+            case Rewind:
+                printf("%10s ", "Rewind");
+                break;
+            case Column:
+                printf("%10s ", "Column");
+                break;
+            case ResultRow:
+                printf("%10s ", "ResultRow");
+                break;
+            case Next:
+                printf("%10s ", "Next");
+                break;
+            case Halt:
+                printf("%10s ", "Halt");
+                break;
+            case Transaction:
+                printf("%10s ", "Transaction");
+                break;
+            case Goto:
+                printf("%10s ", "Goto");
+                break;
+            default:
+                printf("%10s ", "unknown");
+                sql4_errno = VDBE_UNKOWN_OPCODE_ERR;
+                break;
+            }
+        printf("%6d %6d %6d %6d\n", ins->p1, ins->p2, ins->p3, ins->p4.i32);
+        
+    }
+
+}
+static void execute_init(SqlPrepareContext* sqlctx, Intstruction* ins)
+{
+    printf("Execute init ins.\n");
+}
+static void execute_openread(SqlPrepareContext* sqlctx, Intstruction* ins)
+{
+    printf("Execute openread ins.\n");
+}
 // 运行字节码
 void vdbe_run(SqlPrepareContext *sqlctx)
 {
+    printf("VDBE run for sql: [%s]\n", sqlctx->sql);
     Intstruction *ins;
     InstructionList *inslist = sqlctx->inslist;
+    print_inslist(inslist);
+    printf("Begin execute instructions:\n");    
     for (size_t pc = 0; pc < inslist->nints; pc++)
     {
         ins = sqlctx->inslist->ints[pc];
@@ -83,4 +136,6 @@ void vdbe_run(SqlPrepareContext *sqlctx)
             break;
         }
     }
+    // debug 临时 保证以前程序正常
+    printf("Vdbe run ok.\n");
 }

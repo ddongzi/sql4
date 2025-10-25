@@ -11,6 +11,7 @@
  * */
 void db_close(Table *table)
 {
+    printf("db closing..\n");
     Pager *pager = table->tree->pager;
     assert(pager);
     assert(table);
@@ -22,18 +23,9 @@ void db_close(Table *table)
         pager_flush(pager, i);
         pager_free_page(pager, i);
     }
-
-    int res = close(pager->fd);
-    if (res == -1) {
-        printf("Error closing db file.\n");
-        exit(EXIT_FAILURE);
-    }
-
-    for (uint32_t i = 0; i < TABLE_MAX_PAGES; ++i) {
-        pager_free_page(pager, i);
-    }
     free(pager);
     free(table);
+    printf("db closed.\n");
 }
 /* db初始化
  * 1. 打开db file

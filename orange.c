@@ -122,6 +122,7 @@ void yyerror(char* s, ...)
 void orange_parse(SqlPrepareContext* sqlctx)
 {
     // flex没有生成头文件，所以这里报提示
+    printf("Orange parse sql: %s\n", sqlctx->sql);
     YY_BUFFER_STATE buffer = yy_scan_string(sqlctx->sql);
     root = malloc(sizeof(struct StmtList));
     root->nstmt = 0;

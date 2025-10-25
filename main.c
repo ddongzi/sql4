@@ -26,9 +26,9 @@ uint16_t sql4_errno = 0; // 初始hua
 Table* g_table = NULL; 
 
 /* 用户输入以封号末尾 + 换行 结束。 */
-char* read_input()
+void read_input(char* input)
 {
-    char* input = malloc(1024);
+    memset(input, 0, 1024);
     size_t input_len = 0;
 
     size_t len = 0;
@@ -39,13 +39,11 @@ char* read_input()
         nread = getline(&line, &len, stdin);
         strncat(input, line, nread - 1); // 不加换行符号            
         if (input_len + nread < 1024
-             && line[nread - 2] == ';'
              && line[nread - 1] == '\n') {
             break;
         }
         input_len += nread - 1;
     }
-    return strdup(input);
 }
 // AST, 字节码生成
 void prepare_sqlctx(char* sql, SqlPrepareContext *sqlctx)
@@ -60,6 +58,7 @@ void prepare_sqlctx(char* sql, SqlPrepareContext *sqlctx)
 void execute_sqlctx(SqlPrepareContext* sqlctx)
 {
     vdbe_run(sqlctx);
+    printf("Execute sql done: [%s]\n", sqlctx->sql);
 }
 // TODO 临时，单表支持
 /*处理源命令*/
@@ -104,23 +103,26 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
     char *file_name = argv[1];
+    char *input = calloc(1, 1024);
     g_table = db_open(file_name);
     //printf("PAGES: %u, ROWS-PAGE: %u, ROW-SIZE :%u\n", TABLE_MAX_PAGES, ROWS_PER_PAGE, ROW_SIZE);
-    char *input = NULL;
     while (true) {
         printf("db > ");
-        input = read_input();
-
+        read_input(input);
         // .开头的 源命令
         if (input[0] == '.') {
             // 源命令
             do_meta_command(input, g_table);
             continue;
         }
+        if (input[strlen(input) - 1] == ';') {
         // 非源命令 sql语句
-        SqlPrepareContext* sqlctx = malloc(sizeof(SqlPrepareContext));
-        prepare_sqlctx(input, sqlctx);
-        execute_sqlctx(sqlctx);
+            SqlPrepareContext* sqlctx = malloc(sizeof(SqlPrepareContext));
+            prepare_sqlctx(input, sqlctx);
+            execute_sqlctx(sqlctx);
+            continue;
+        }
+        printf("UNKOWN input! [%s]", input);
     }
     return 0;
 }
