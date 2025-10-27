@@ -23,7 +23,6 @@
 #include "db.h"
 
 uint16_t sql4_errno = 0; // 初始hua
-Table* g_table = NULL; 
 
 /* 用户输入以封号末尾 + 换行 结束。 */
 void read_input(char* input)
@@ -46,8 +45,9 @@ void read_input(char* input)
     }
 }
 // AST, 字节码生成
-void prepare_sqlctx(char* sql, SqlPrepareContext *sqlctx)
+void prepare_sqlctx(DB* db, char* sql, SqlPrepareContext *sqlctx)
 {
+    sqlctx->pager = db->pager;
     sqlctx->sql = strdup(sql);
     sqlctx->ast = NULL; // 在orange_parse分配设置
     sqlctx->inslist = NULL; // 在bytecode_generate分配设置
@@ -62,14 +62,15 @@ void execute_sqlctx(SqlPrepareContext* sqlctx)
 }
 // TODO 临时，单表支持
 /*处理源命令*/
-void do_meta_command(char* input, Table *table)
+void do_meta_command(char* input, DB* db)
 {
     if (strcmp(input, ".exit") == 0) {
-        db_close(table);
+        db_close(db);
         exit(EXIT_SUCCESS);
     } else if (strcmp(input, ".btree") == 0) {
         printf("Tree:\n");
-        btree_print(table->tree);
+        // TODO 
+        // btree_print(table->tree);
     } else if (strcmp(input, ".help") == 0) {
         printf("Help:\n");
         printf("Meta command:\n");
@@ -86,7 +87,8 @@ void do_meta_command(char* input, Table *table)
     }
 }
 
-extern Table* g_table;
+
+
 
 /**
  *
@@ -104,21 +106,22 @@ int main(int argc, char *argv[])
     }
     char *file_name = argv[1];
     char *input = calloc(1, 1024);
-    g_table = db_open(file_name);
-    //printf("PAGES: %u, ROWS-PAGE: %u, ROW-SIZE :%u\n", TABLE_MAX_PAGES, ROWS_PER_PAGE, ROW_SIZE);
+    g_db = db_open(file_name);
+    Pager* pager = g_db->pager;
+    
     while (true) {
         printf("db > ");
         read_input(input);
         // .开头的 源命令
         if (input[0] == '.') {
             // 源命令
-            do_meta_command(input, g_table);
+            do_meta_command(input, g_db);
             continue;
         }
         if (input[strlen(input) - 1] == ';') {
         // 非源命令 sql语句
             SqlPrepareContext* sqlctx = malloc(sizeof(SqlPrepareContext));
-            prepare_sqlctx(input, sqlctx);
+            prepare_sqlctx(g_db, input, sqlctx);
             execute_sqlctx(sqlctx);
             continue;
         }

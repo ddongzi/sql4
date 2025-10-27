@@ -58,7 +58,9 @@ extern int yydebug;
     NAME = 259,                    /* NAME  */
     INTNUM = 260,                  /* INTNUM  */
     SELECT = 261,                  /* SELECT  */
-    FROM = 262                     /* FROM  */
+    FROM = 262,                    /* FROM  */
+    CREATE = 263,                  /* CREATE  */
+    TABLE = 264                    /* TABLE  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -72,13 +74,14 @@ union YYSTYPE
     char *strval;
                 int intval;
         struct SelectStmt* selectStmtVal;
+        struct CreateStmt* createStmtVal;
         struct Expr* exprVal;
         struct TableRef* tabRefVal;
         struct ExprList* exprListVal;
         struct Stmt* stmtVal;
         struct StmtList* stmtListVal;    
 
-#line 82 "build/orange.tab.h"
+#line 85 "build/orange.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

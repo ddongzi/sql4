@@ -7,11 +7,8 @@
 #include <string.h>
 #include <assert.h>
 
-
-
-
-#define NODE_INTERNAL 0
-#define NODE_LEAF 1
+#define NODE_INTERNAL 1
+#define NODE_LEAF 0 // 空白页 都是0， 默认应该是leaf
 
 /* B+Tree  config */
 #define BTREE_M 3 // TODO 暂时没有用，因为叶子节点没有限制
@@ -25,8 +22,8 @@
 
 /* ============ Common header layout ============*/
 /*
- * | Node Type (uint8_t)      | 1 byte    | 0表示内部节点，1表示叶子节点
- * | Is Root (uint8_t)        | 1 byte    | 
+ * | Node Type (uint8_t)      | 1 byte    | 1表示内部节点，0表示叶子节点
+ * | Is Root (uint8_t)        | 1 byte    | 0
  * | Parent Pointer (uint8_t) | 1 byte   | root节点parent是Invalid_page_num
  * | Page num                 | 1 byte   | 
  * =========================================
@@ -70,7 +67,6 @@ typedef struct {
     leaf_node_cell_t cells[LEAF_NODE_MAX_CELLS];
     unsigned char padding[PAGE_SIZE - sizeof(common_header_t) -3 * sizeof(uint8_t) - sizeof(leaf_node_cell_t)]; // 填充剩余page空间
 } leaf_node_t;
-
 
 
 /* ============ Internal Node Structure ============ */
@@ -1116,7 +1112,6 @@ void leaf_node_remove(Cursor *cursor)
 Cursor *btree_cursor_start(BTree *tree)
 {
     // 返回最小的key数据 所在cursor
-    // TODO 可能有问题， 这里传key=0
     Cursor *cursor = btree_cursor_find(tree, 0);
     leaf_node_t *node = (leaf_node_t*)pager_get_page(tree->pager, cursor->page_num);
     uint32_t num_cells = node->num_cells;
@@ -1180,7 +1175,6 @@ void btree_print_config(BTree* tree)
     printf("BTree Configuration:\n");
     printf("tree m:%u\n", BTREE_M);
     printf("tree height:%u \n", BTREE_HEIGHT);
-    printf("max pages : %u\n", TABLE_MAX_PAGES);
 
     printf("Page size: %d\n", PAGE_SIZE);
     printf("cell data size: %ld\n", sizeof(CELL_DATA_SIZE));
@@ -1279,16 +1273,25 @@ SQL4_CODE btree_insert(BTree* tree, uint32_t key, uint8_t* data, size_t datalen)
 SQL4_CODE btree_select(BTree* tree, size_t* selectsize, uint8_t** data)
 {
     Cursor *cursor = btree_cursor_start(tree);
+    printf("(debug) btree cursor start a tree\n");
     size_t retsize = 0;
     uint8_t** retdata = NULL;
     while (!cursor->end_of_table) {
+        btree_cursor_advance(cursor);
         retsize++;
+    }
+    free(cursor);
+    if (retsize == 0) {
+        *selectsize = 0;
+        data = NULL;
+        return BTREE_SELECT_SUCCESS;
     }
     retdata = malloc(retsize * sizeof(uint8_t*));
     cursor = btree_cursor_start(tree);
     retsize = 0;
     while (!cursor->end_of_table) {
         retdata[retsize++] = btree_cursor_value(cursor);
+        btree_cursor_advance(cursor);
     }
     
     free(cursor);
@@ -1311,11 +1314,40 @@ SQL4_CODE btree_delete(BTree* tree, uint32_t key)
     free(cursor);
     return BTREE_DELETE_SUCCESS;
 }
-
-BTree* btree_create(uint32_t root_pagenum, Pager* pager)
+// 对一个空白树，做最基本的设置，
+void btree_init(uint32_t root_pagenum, Pager* pager)
 {
+    printf("init a blank btree");
+    // 空白页是 root， 是leaf 
+    // common headr:
+    node_t *root = (node_t*)pager_get_page(pager, 0);
+    root->leaf.meta.is_root = 1;
+    root->leaf.meta.node_type = NODE_LEAF;
+    root->leaf.meta.page_num = root_pagenum;
+    root->leaf.meta.parent_page_num = INVALID_PAGE_NUM;
+    root->leaf.num_cells = 0;
+    root->leaf.next_leaf_page_num = INVALID_PAGE_NUM;
+    pager_flush(pager, 0);
+}
+
+// 获取一个树（rootpagenum）。可能树空、可能不空
+BTree* btree_get(uint32_t root_pagenum, Pager* pager)
+{
+    assert(pager);
     BTree* tree = malloc(sizeof(BTree));
     tree->root_page_num = root_pagenum;
     tree->pager = pager;
+    // 检测该tree是否是新的，即table是否空, 如果空，pager要扩容
+    if (!pager_has_page(pager, root_pagenum)) {
+        printf("(debug) pagenum[%d] out of p.numpages[%d]\n", root_pagenum, pager->num_pages);
+        pager_add_page(pager, root_pagenum);
+    }
     return tree;
+}
+
+// 返回树的最大key, 即最右孩子的key
+int btree_get_newrowid(BTree* tree)
+{
+    node_t* root = (node_t*)pager_get_page(tree->pager, tree->root_page_num);
+    return get_node_max_key(tree, root) + 1;
 }

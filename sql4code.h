@@ -24,3 +24,4 @@ typedef uint16_t SQL4_CODE;
 #define VDBE_OK 0x3000
 #define VDBE_UNKOWN_OPCODE_ERR 0x3001
 
+#define TABLE_NOT_EXIST_ERR 0x8001

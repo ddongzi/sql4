@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdint.h>
+#include "pager.h"
 
 typedef struct StmtList AST; // 向前声明
 
@@ -32,8 +33,15 @@ enum OPCode{
     ResultRow,
     Next,
     Halt,
+    String,
+    MakeRecord,
     Transaction,
     Goto,
+    OpenWrite,
+    Insert,
+    NewRowid,
+    SeekRowid,
+    Rowid,
 };
 
 typedef struct{
@@ -42,23 +50,13 @@ typedef struct{
     Intstruction* *ints;
 } InstructionList;
 
-// 寄存器，存储临时数据
-typedef struct {
-    uint8_t flags; // 标志位， TODO 
-    union {
-        int32_t i32;
-        int64_t il64;
-        double f64;
-        char* s;
-    } value;
-} Register;
-extern Register g_registers[16]; // 声明vdb全局寄存器
 
 // 全局处理的上下文，从input输入，到编译 ast， 到字节码列表
 typedef struct {
     char* sql;  // sql语句
     AST* ast;   // 对应语法树
     InstructionList* inslist; // 对应字节码列表
+    Pager* pager;   // 太常用了 就放在这里
 } SqlPrepareContext;
 
 void vdbe_run(SqlPrepareContext* );

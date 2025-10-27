@@ -10,13 +10,16 @@ typedef  struct {
     char* addr;
 } Row;
 
-
+// 存储表的元信息，不存储数据，来自启动时候master读取
+// 属于静态结构，不像pager那样动态操作，
 typedef struct  {
-    BTree* tree;    // 对应一个tree
+    BTree* tree;    // 对应一个tree 。 可以考虑只留下rootpagenum
+    char* name;
+    char** cols;   // 列字段
+    int ncol; // 列字段数量
 } Table;
 
-
-// TODO 临时，仅支持单表
-extern Table * g_table;
+// 
+Table* init_table(uint32_t root_pgnum, char* name, char** cols, int ncol);
 
 #endif // TABLE_H

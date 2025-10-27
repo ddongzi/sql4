@@ -10,8 +10,12 @@ void yyerror(char* s, ...);
 %%
 
 SELECT {  return SELECT;}
+CREATE { return CREATE; }
+TABLE { return TABLE; }
 "*" |
 "," |
+"(" |
+")" |
 ";"    {  return yytext[0];}
 FROM {  return FROM; }
 
@@ -22,7 +26,7 @@ FROM {  return FROM; }
 [ \t]+    {  }   //忽略
 
 
-\n {  return EOL;} 
+\n {  return EOL;}  // 通过string或者file输入时候，不参考这个，而是自动EOF
 
 .    { printf("mstery ignore %c\n", yytext[0]); }
 

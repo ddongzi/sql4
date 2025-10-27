@@ -1,7 +1,7 @@
-sql4: btree.c bytecode.c db.c main.c orange.c pager.c vdbe.c\
+sql4: btree.c bytecode.c db.c main.c oranger.c pager.c vdbe.c\
 	sql4code.h sql4limit.h table.h\
 	build/orange.tab.c build/orange_lex.yy.c
-	gcc -o sql4 btree.c bytecode.c db.c main.c orange.c pager.c vdbe.c\
+	gcc -g -o sql4 btree.c bytecode.c db.c main.c oranger.c pager.c vdbe.c\
 		sql4code.h sql4limit.h table.h\
 		build/orange.tab.c build/orange_lex.yy.c\
 		-Ibuild -I. -lfl 

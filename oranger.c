@@ -16,11 +16,12 @@ struct Stmt* newStmt(enum StmtType type, void* st)
     return s;
 }
 
-void stmtListAdd(struct StmtList* stmts, struct Stmt* item)
+void stmtListAdd(struct Stmt* item)
 {
-    stmts->items = realloc(stmts->items, sizeof(struct Stmt*) * (stmts->nstmt + 1));
-    stmts->items[stmts->nstmt] = item;
-    stmts->nstmt += 1;
+    printf("(debug) stmtlistadd\n");
+    root->items = realloc(root->items, sizeof(struct Stmt*) * (root->nstmt + 1));
+    root->items[root->nstmt] = item;
+    root->nstmt += 1;
 }
 struct SelectStmt* newSelectStmt(struct ExprList* exprls, struct TableRef* tabref)
 {
@@ -49,12 +50,21 @@ struct ExprList* newExprList(struct Expr* item)
     exprs->nexpr = 1;
     return exprs;
 }
+struct CreateStmt* newCreateStmt(struct ExprList* col_list,struct TableRef* tabref)
+{
+        struct CreateStmt* createst = malloc(sizeof(struct CreateStmt));
+    createst->col_list = col_list;
+    createst->table_ref = tabref;
+    return createst;
+}
+
 void exprListAdd(struct ExprList* exprs, struct Expr* item)
 {
     exprs->items = realloc(exprs->items, sizeof(struct Expr*) * (exprs->nexpr + 1));
     exprs->items[exprs->nexpr] = item;
     exprs->nexpr += 1;
 }
+
 static void printIdent(int level)
 {
     for (int i = 0; i < level; i++)
@@ -88,6 +98,13 @@ static void printSelectStmt(struct SelectStmt* selectst, int level)
     printExprList(selectst->col_list, level+1);
     printTableRef(selectst->table_ref, level + 1);
 }
+static void printCreateStmt(struct CreateStmt* createst, int level)
+{
+    printIdent(level);
+    printf("└─ CreateStmt: \n");
+    printExprList(createst->col_list, level+1);
+    printTableRef(createst->table_ref, level + 1);
+}
 static void printStmt(struct Stmt * st, int level)
 {
     switch (st->type)
@@ -95,19 +112,21 @@ static void printStmt(struct Stmt * st, int level)
     case STMT_SELECT:
         printSelectStmt((struct SelectStmt*)(st->st), level);
         break;
-    
+    case STMT_CREATE:
+        printCreateStmt((struct CreateStmt*)(st->st), level);
+        break;
     default:
         break;
     }
 }
-static void printStmtList(struct StmtList* stlist)
+static void printStmtList()
 {
     int level = 0;
     printIdent(level);
     printf("StmtList:\n");
-    for (int i = 0; i < stlist->nstmt; i++)
+    for (int i = 0; i < root->nstmt; i++)
     {   
-        printStmt(stlist->items[i], 1);
+        printStmt(root->items[i], 1);
     }
     
 }
@@ -128,8 +147,9 @@ void orange_parse(SqlPrepareContext* sqlctx)
     root->nstmt = 0;
     yydebug = 1;
     yyparse();
+    printf("(debug) root nstmt [%d]", root->nstmt);
     sqlctx->ast = root;
-    printStmtList(root);
+    printStmtList();
     yy_delete_buffer(buffer);
 }
 // // for test!
