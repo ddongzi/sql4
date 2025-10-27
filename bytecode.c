@@ -12,9 +12,9 @@ static int nex_reg_num = 0;
 // 同理，cursornum也是占位
 static int next_cursor_num = 0; 
 
- Intstruction* bytecode_init()
+ Instruction* bytecode_init()
 {
-    Intstruction* ins = vdbe_new_ins(Init, 0, 0, 0, (union P4_t){0});
+    Instruction* ins = vdbe_new_ins(Init, 0, 0, 0, (union P4_t){0});
     return ins;
 }
 // TODO 还是需要把把master的一些表的元信息 缓存到内存结构中， 这个时候不经过字节码 直接取btree
@@ -24,83 +24,71 @@ static int next_cursor_num = 0;
  * p3: 0 not used
  * p4: 0 not used
  */
-Intstruction* bytecode_openwrite()
+Instruction* bytecode_openwrite()
 {
-    Intstruction* ins = vdbe_new_ins(OpenWrite, next_cursor_num++,
+    Instruction* ins = vdbe_new_ins(OpenWrite, next_cursor_num++,
          g_db->master->tree->root_page_num,
          0, (union P4_t){0});
     return ins;
 }
-Intstruction* bytecode_openread(char* tabname)
+/*
+* P1: cursor编号
+* P2: root pagenum
+* p3: 0 not used
+* p4: 0 not used 
+*/
+Instruction* bytecode_openread(char* tabname)
 {
-    // TODO 不应该创建游标获取，而是通过元信息
 
-    /*
-     * P1: cursor编号
-     * P2: root pagenum
-     * p3: 0 not used
-     * p4: 0 not used 
-     */
-    Intstruction* ins = vdbe_new_ins(OpenRead, next_cursor_num++, 
+    Instruction* ins = vdbe_new_ins(OpenRead, next_cursor_num++, 
         db_get_table(g_db, tabname)->tree->root_page_num,
         0, (union P4_t){0});
     return ins;
 }
- Intstruction* bytecode_resultrow()
- {
-    /**
-     * P1: 寄存器序号
-     * P2: 寄存器序号
-     * p3: 0 not used
-     * p4: 0 not used 
-     */
-    Intstruction* ins = vdbe_new_ins(ResultRow, 0, 1, 0, (union P4_t){0});
-    return ins;
- }
- Intstruction* bytecode_rewind()
+/**
+ * 游标移动到第一行
+ * P1: cursor编号
+ * P2: 表为空时候跳转地址
+ * P3: 0 not used
+ * P4: 0 not used
+*/
+Instruction* bytecode_rewind(int cursor_num)
 {
-    /**
-     * P1: cursor编号
-     * P2: 表为空时候跳转地址
-     * P3: 0 not used
-     * P4: 0 not used
-    */
-    Intstruction* ins = vdbe_new_ins(Rewind, 0, 0, 0, (union P4_t){0});
+    Instruction* ins = vdbe_new_ins(Rewind, cursor_num, 0, 0, (union P4_t){0});
     return ins;
 }
- Intstruction* bytecode_column(char* colname)
+/**
+ * P1: cursor编号
+ * P2: 列，从1开始
+ * P3: 目标寄存器
+ * P4: 0 not used
+ */
+Instruction* bytecode_column(int coli)
 {
-    /**
-     * P1: cursor编号
-     * P2: 列，从1开始
-     * P3: 目标寄存器
-     * P4: 0 not used
-     */
-    // 运行column指令，会把列名放入目标寄存器
-    Intstruction* ins = vdbe_new_ins(Column, 0, 1, 0, (union P4_t){0});
+    Instruction* ins = vdbe_new_ins(Column, 0, coli, nex_reg_num++, (union P4_t){0});
     return ins;
 }
- Intstruction* bytecode_next()
+/** cursor移动到下一行
+ * P1: cursor编号
+ * P2: 循环的跳转地址。还有下一行时候跳转
+ * P3: 0 not used
+ * P4: 0 not used
+ */
+ Instruction* bytecode_next(int p1, int p2)
 {
-    /**
-     * P1: cursor编号
-     * P2: 跳转地址。 如果还有下一行，就跳转 继续读
-     * P3: 0 not used
-     * P4: 0 not used
-     */
-    Intstruction* ins = vdbe_new_ins(Next, 0, 0, 0, (union P4_t){0});
+    Instruction* ins = vdbe_new_ins(Next, p1, p2, 0, (union P4_t){0});
     return ins;
 }
- Intstruction* bytecode_halt()
+/**
+ * P1: 0 not used
+ * P2: 0 not used
+ * P3: 0 not used
+ * P4: 0 not used
+ */
+ Instruction* bytecode_halt()
 {
-    /**
-     * P1: 0 not used
-     * P2: 0 not used
-     * P3: 0 not used
-     * P4: 0 not used
-     */
     // 结束指令流运行
-    Intstruction* ins = vdbe_new_ins(Halt, 0, 0, 0, (union P4_t){0});
+    Instruction* ins = vdbe_new_ins(Halt, 0, 0, 0, (union P4_t){0});
     return ins;
 }
     /**
@@ -109,21 +97,21 @@ Intstruction* bytecode_openread(char* tabname)
      * P3: 0 not used
      * P4: char* 
      */
-Intstruction* bytecode_string(char* s)
+Instruction* bytecode_string(char* s)
 {
     union P4_t p4 = {.s = s};
-    Intstruction* ins = vdbe_new_ins(String, 0, nex_reg_num++, 0, p4);
+    Instruction* ins = vdbe_new_ins(String, 0, nex_reg_num++, 0, p4);
     return ins;
 }
 /**
  * P1: 起始寄存器
- * P2: 打包的列数
+ * P2: 终止寄存器（与sqlite不同）
  * P3：目标寄存器
  * P4: 0 not used
  */
-Intstruction* bytecode_mkrecord(int32_t p1, int32_t columns)
+Instruction* bytecode_mkrecord(int32_t p1, int32_t p2)
 {
-     Intstruction* ins = vdbe_new_ins(MakeRecord, p1, columns, nex_reg_num++, (union P4_t){0});
+     Instruction* ins = vdbe_new_ins(MakeRecord, p1, p2, nex_reg_num++, (union P4_t){0});
     return ins;   
 }
 /**
@@ -133,9 +121,9 @@ Intstruction* bytecode_mkrecord(int32_t p1, int32_t columns)
  * p3: rowid的寄存器编号
  * p4: 0 not used
  */
-Intstruction* bytecode_insert(uint32_t p1, int32_t p2, int32_t p3)
+Instruction* bytecode_insert(uint32_t p1, int32_t p2, int32_t p3)
 {
-    Intstruction* ins = vdbe_new_ins(Insert, p1,  p2, p3, (union P4_t){0});
+    Instruction* ins = vdbe_new_ins(Insert, p1,  p2, p3, (union P4_t){0});
     return ins;   
 }
 
@@ -146,36 +134,69 @@ Intstruction* bytecode_insert(uint32_t p1, int32_t p2, int32_t p3)
  * p3: 0 not used
  * p4: 0 not used
  */
-Intstruction*  bytecode_newrowid(int cursor_num)
+Instruction*  bytecode_newrowid(int cursor_num)
 {
-    Intstruction* ins = vdbe_new_ins(NewRowid, cursor_num, nex_reg_num++, 0, (union P4_t){0});
+    Instruction* ins = vdbe_new_ins(NewRowid, cursor_num, nex_reg_num++, 0, (union P4_t){0});
+    return ins;   
+}
+/**
+ * 合并寄存器1到2 的内容，为一行， 我们不会把这个内容放在寄存器，执行时候会在vdbe缓冲中
+ * p1: 寄存器编号1
+ * p2: 寄存器编号2
+ * p3: 0 not used
+ * p4: 0 not used
+ */
+Instruction*  bytecode_resultrow(int p1, int p2)
+{   
+    Instruction* ins = vdbe_new_ins(ResultRow, p1, p2, 0, (union P4_t){0});
+    
     return ins;   
 }
  void bytecode_select(struct SelectStmt* selectst, SqlPrepareContext* sqlctx)
 {
+    uint32_t nins = 0;
+    
     InstructionList* inslist = sqlctx->inslist;
     char* tabname = selectst->table_ref->name;
-    Intstruction* ins;
+    Instruction* ins;
     ins = bytecode_init();
     vdbe_inslist_add(inslist, ins);
+    nins++;
 
-    ins = bytecode_openread(tabname);
-    vdbe_inslist_add(inslist, ins);
+    Instruction* openread_ins = bytecode_openread(tabname);
+    vdbe_inslist_add(inslist, openread_ins);
+    nins++;
 
-    ins = bytecode_rewind();
-    vdbe_inslist_add(inslist, ins); // TODO p2 待定，需要halt地址
+    Instruction* rewind_ins = bytecode_rewind(ins->p1);
+    vdbe_inslist_add(inslist, rewind_ins); 
+    nins++;
 
+    int col_start_addr = nins;
+    int col_reg1 = 0, col_reg2 = 0;
     for (int i = 0; i < selectst->col_list->nexpr; i++)
     {
         struct Expr* expr = selectst->col_list->items[i];
-        ins = bytecode_column(expr->name);
-        vdbe_inslist_add(inslist, ins);
-    }    
-    ins = bytecode_next();
-    vdbe_inslist_add(inslist, ins); // TODO p2 待定
+        Instruction* col_ins = bytecode_column(i + 1);
+        vdbe_inslist_add(inslist, col_ins);
+        if (col_ins->p3 < col_reg1) col_reg1 = col_ins->p3;
+        if (col_ins->p3 > col_reg2) col_reg2 = col_ins->p3;
+        nins++;
+    } 
+    Instruction* resultrow_ins = bytecode_resultrow(col_reg1, col_reg2);
+    vdbe_inslist_add(inslist, resultrow_ins);
+    nins++;   
+    
+    Instruction* next_ins = bytecode_next(openread_ins->p1, col_start_addr);
+    vdbe_inslist_add(inslist, next_ins); 
+    nins++;
 
-    ins = bytecode_halt();
-    vdbe_inslist_add(inslist, ins);
+    Instruction* halt_ins = bytecode_halt();
+    vdbe_inslist_add(inslist, halt_ins);
+    uint32_t haltaddr = nins;
+
+    nins++;
+
+    rewind_ins->p2 = haltaddr;
 }
 
 
@@ -195,26 +216,26 @@ void bytecode_create_table(struct CreateStmt* creatst,  SqlPrepareContext* sqlct
     // Commit 提交事务
     // Halt
     InstructionList* inslist = sqlctx->inslist;
-    Intstruction* ins;
+    Instruction* ins;
     ins = bytecode_init();
     vdbe_inslist_add(inslist, ins);
 
-    Intstruction* openwt_ins = bytecode_openwrite();
+    Instruction* openwt_ins = bytecode_openwrite();
     vdbe_inslist_add(inslist, openwt_ins);
     
-    Intstruction* newrowid_ins = bytecode_newrowid(openwt_ins->p1);
+    Instruction* newrowid_ins = bytecode_newrowid(openwt_ins->p1);
     vdbe_inslist_add(inslist, newrowid_ins);
 
-    Intstruction* typeins = bytecode_string("table");
+    Instruction* typeins = bytecode_string("table");
     vdbe_inslist_add(inslist, typeins);
     
-    Intstruction* tabname_ins = bytecode_string(creatst->table_ref->name);
+    Instruction* tabname_ins = bytecode_string(creatst->table_ref->name);
     vdbe_inslist_add(inslist, tabname_ins);
     
-    Intstruction* sql_ins = bytecode_string(sqlctx->sql);
+    Instruction* sql_ins = bytecode_string(sqlctx->sql);
     vdbe_inslist_add(inslist, sql_ins);
     
-    Intstruction* mkrcrd_ins = bytecode_mkrecord(typeins->p2, sql_ins->p2 - typeins->p2 + 1);
+    Instruction* mkrcrd_ins = bytecode_mkrecord(typeins->p2, sql_ins->p2);
     vdbe_inslist_add(inslist, mkrcrd_ins);
 
     ins = bytecode_insert(openwt_ins->p1, mkrcrd_ins->p3, newrowid_ins->p2);

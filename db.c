@@ -8,6 +8,9 @@
 DB* g_db = NULL; // 目前仅支持一个库
 Table* db_get_table(DB* db, char* name)
 {
+    if (strcmp(name, "master") == 0) {
+        return db->master;
+    }
     for (int i = 0; i < db->ntab; i++)
     {
         if (strcmp(db->tabs[i]->name, name) == 0) {

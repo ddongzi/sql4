@@ -59,6 +59,23 @@ void execute_sqlctx(SqlPrepareContext* sqlctx)
 {
     vdbe_run(sqlctx);
     printf("Execute sql done: [%s]\n", sqlctx->sql);
+    printf("Sql result: \n");
+    // TODO 需要数据解析 <length><data><length><data>....
+    char s[512] = {0}; // (debug)
+    for (size_t i = 0; i < sqlctx->nbuf; i)
+    {
+        int len = sqlctx->buffer[i] << 8 | sqlctx->buffer[i+1];
+        i += 2;
+        printf("(debug) result: %d \n", len);
+        assert(len < 512);
+        memcpy(s, sqlctx->buffer + i, len);
+        s[len] = '\0';
+        printf("%s\n", s);
+        i += len;
+        memset(s, 0, 512);
+    }
+    printf("\n");
+    
 }
 // TODO 临时，单表支持
 /*处理源命令*/

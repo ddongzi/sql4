@@ -3,13 +3,6 @@
 
 #include "btree.h"
 
-// TODO 目前是固定字段
-typedef  struct {
-    int id;    // 日志时间
-    char* name;
-    char* addr;
-} Row;
-
 // 存储表的元信息，不存储数据，来自启动时候master读取
 // 属于静态结构，不像pager那样动态操作，
 typedef struct  {

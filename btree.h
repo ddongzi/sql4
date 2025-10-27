@@ -34,6 +34,7 @@ Cursor *btree_cursor_start(BTree *tree);
 Cursor *btree_cursor_find(BTree *tree, uint32_t key);
 void btree_cursor_advance(Cursor *cursor);
 uint8_t* btree_cursor_value(Cursor *cursor);
+void btree_cursor_free(Cursor* cursor);
 
 SQL4_CODE btree_insert(BTree* tree, uint32_t key, uint8_t* data, size_t datalen);
 SQL4_CODE btree_select(BTree* tree, size_t* selectsize, uint8_t** data);

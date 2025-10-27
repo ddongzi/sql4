@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <stdint.h>
 #include "pager.h"
+#include "table.h"
 
 typedef struct StmtList AST; // 向前声明
 
@@ -24,7 +25,7 @@ typedef struct  {
     int32_t p2;
     int32_t p3;
     union P4_t p4;
-} Intstruction;
+} Instruction;
 enum OPCode{ 
     Init,
     OpenRead,
@@ -47,8 +48,9 @@ enum OPCode{
 typedef struct{
     // 指令数组
     size_t nints;
-    Intstruction* *ints;
+    Instruction* *ints;
 } InstructionList;
+
 
 
 // 全局处理的上下文，从input输入，到编译 ast， 到字节码列表
@@ -57,13 +59,16 @@ typedef struct {
     AST* ast;   // 对应语法树
     InstructionList* inslist; // 对应字节码列表
     Pager* pager;   // 太常用了 就放在这里
+
+    uint8_t* buffer; // TODO 这里应该是resultlist， 先用buffer代替
+    int nbuf;
 } SqlPrepareContext;
 
 void vdbe_run(SqlPrepareContext* );
 
-Intstruction* vdbe_new_ins(int opcode, int32_t p1, int32_t p2, int32_t p3, union P4_t p4);
+Instruction* vdbe_new_ins(int opcode, int32_t p1, int32_t p2, int32_t p3, union P4_t p4);
 
 InstructionList* vdbe_new_inslist();
-void vdbe_inslist_add(InstructionList*, Intstruction*);
+void vdbe_inslist_add(InstructionList*, Instruction*);
 
 #endif

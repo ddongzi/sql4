@@ -1165,6 +1165,10 @@ uint8_t* btree_cursor_value(Cursor *cursor)
     leaf_node_t *node = (leaf_node_t*)pager_get_page(cursor->btree->pager, page_num);
     return &node->cells[cursor->cell_num].data;
 }
+void btree_cursor_free(Cursor* cursor)
+{
+    free(cursor);
+}
 
 
 /**
@@ -1350,4 +1354,10 @@ int btree_get_newrowid(BTree* tree)
 {
     node_t* root = (node_t*)pager_get_page(tree->pager, tree->root_page_num);
     return get_node_max_key(tree, root) + 1;
+}
+
+bool btree_is_empty(BTree* tree)
+{
+    // todo  未使用的函数
+    return true;
 }

@@ -12,6 +12,8 @@
 
 #define MAX_OPEN_CURSOR 128 // vdbe运行时候最多维持这么多个cursor打开
 static Cursor* g_vdb_cursors[MAX_OPEN_CURSOR];
+static size_t g_pc = 0; // 全局，可以跳转
+static bool g_halt_flag = false;
 
 enum RegisterFlag {
     REG_I32,
@@ -35,9 +37,9 @@ typedef struct {
 #define REGISTER_SIZE 64 // 最多维持16个寄存器
 Register g_registers[REGISTER_SIZE]; // 声明vdb全局寄存器
 
-Intstruction* vdbe_new_ins(int opcode, int32_t p1, int32_t p2, int32_t p3, union P4_t p4)
+Instruction* vdbe_new_ins(int opcode, int32_t p1, int32_t p2, int32_t p3, union P4_t p4)
 {
-    Intstruction* ins = malloc(sizeof(Intstruction));
+    Instruction* ins = malloc(sizeof(Instruction));
     ins->opcode = opcode;
     ins->p1 = p1;
     ins->p2 = p2;
@@ -52,9 +54,9 @@ InstructionList* vdbe_new_inslist()
     inslist->ints = NULL;
     return inslist;
 }
-void vdbe_inslist_add(InstructionList* inslist, Intstruction* ins)
+void vdbe_inslist_add(InstructionList* inslist, Instruction* ins)
 {
-    inslist->ints = realloc(inslist->ints, sizeof(Intstruction*) * (inslist->nints + 1));
+    inslist->ints = realloc(inslist->ints, sizeof(Instruction*) * (inslist->nints + 1));
     inslist->ints[inslist->nints] = ins;
     inslist->nints += 1;
 }
@@ -65,7 +67,7 @@ void print_inslist(InstructionList* inslist)
 
     printf("Instruction List:\n");
     printf("%4s %10s %6s %6s %6s %6s\n", "Addr", "Opcode", "P1", "P2", "P3", "P4");
-    Intstruction *ins;
+    Instruction *ins;
     for (int i = 0; i < inslist->nints; i++)
     {
         ins = inslist->ints[i];
@@ -123,17 +125,97 @@ void print_inslist(InstructionList* inslist)
     }
 
 }
-static void execute_init(SqlPrepareContext* sqlctx, Intstruction* ins)
+static void execute_init(SqlPrepareContext* sqlctx, Instruction* ins)
 {
     printf("Execute init ins.\n");
+    g_halt_flag = false;
 }
-static void execute_openread(SqlPrepareContext* sqlctx, Intstruction* ins)
+static void execute_rewind(SqlPrepareContext* sqlctx, Instruction* ins)
+{
+    Cursor* cursor = g_vdb_cursors[ins->p1]; // 本来就是指向第一行的，不需要移动到第一行
+    // TODO 为了语义正确，实际上应该让cursor 调用函数移动到第一行，
+
+    // 如果表为空直接 跳转到ins.p2
+    
+}
+static void execute_next(SqlPrepareContext* sqlctx, Instruction* ins)
+{
+    printf("execute next\n");
+    Cursor* cursor = g_vdb_cursors[ins->p1]; 
+    btree_cursor_advance(cursor);
+    if (!cursor->end_of_table) {
+        g_pc = ins->p2; // 目前， 执行的pc 和 生成的pc是一致的。
+    }
+}
+static void execute_halt(SqlPrepareContext* sqlctx, Instruction* ins)
+{
+    g_halt_flag = true;
+    // 重置vdbe状态
+    printf("execute halt\n");
+    g_pc = 0;
+    for (size_t i = 0; i < MAX_OPEN_CURSOR; i++)
+    {
+        if (g_vdb_cursors[i] != NULL) {
+            // FREE cursor
+            btree_cursor_free(g_vdb_cursors[i]);
+            g_vdb_cursors[i] = NULL;
+        }
+    }
+    memset(g_registers, 0, sizeof(Register) * REGISTER_SIZE);
+}
+
+
+// 把col返回的内容放在buffer
+static void execute_resultrow(SqlPrepareContext* sqlctx, Instruction* ins)
+{
+    printf("execute resultrow\n");
+    for (size_t i = ins->p1; i <= ins->p2; i++)
+    {
+        uint8_t* data = g_registers[i].value.bytes;
+        int n = g_registers[i].n;
+        sqlctx->buffer = realloc(sqlctx->buffer, sqlctx->nbuf + n);
+        memcpy(sqlctx->buffer, data, n);
+        sqlctx->nbuf += n;        
+    }
+}
+
+static void execute_column(SqlPrepareContext* sqlctx, Instruction* ins)
+{
+    // TODO 有问题！
+    printf("execute column\n");
+    Cursor* cursor = g_vdb_cursors[ins->p1];
+    int coli = ins->p2;
+    // 读取coli的内容 到 ins.p2寄存器
+    // 目前都是直接全部读出来忽略表结构
+    uint8_t* data = btree_cursor_value(cursor);
+    int j = 0;
+    for (size_t i = 0; i < coli; i++)
+    {
+        int len = (data[j] << 8 | data[j+1]);
+        if (i == coli - 1) {
+            g_registers[ins->p3].n = len;
+            uint8_t* tmp = malloc(2 + len);
+            memcpy(tmp, data + j, 2 + len);
+            g_registers[ins->p3].value.bytes = tmp;
+            g_registers[ins->p3].flags = REG_BYTES;
+            printf("(debug) colidata len [%d]\n ", len);
+        } 
+        j += 2 + len;
+    }
+}
+
+// 创建cursor
+static void execute_openread(SqlPrepareContext* sqlctx, Instruction* ins)
 {
     printf("Execute openread ins.\n");
+    uint32_t root_pagenum = ins->p2;
+    Cursor* cursor = btree_cursor_start(btree_get(root_pagenum, sqlctx->pager));
+    // 需要与cursor编号绑定。
+    g_vdb_cursors[ins->p1] = cursor;
 }
 
 // 为表访问创建cursor
-static void execute_openwrite(SqlPrepareContext* sqlctx, Intstruction* ins)
+static void execute_openwrite(SqlPrepareContext* sqlctx, Instruction* ins)
 {
     printf("Execute openwrite ins.\n");
     uint32_t root_pagenum = ins->p2;
@@ -142,7 +224,7 @@ static void execute_openwrite(SqlPrepareContext* sqlctx, Intstruction* ins)
     g_vdb_cursors[ins->p1] = cursor;
 }
 // 字符串设置寄存器
-static void execute_string(SqlPrepareContext* sqlctx, Intstruction* ins)
+static void execute_string(SqlPrepareContext* sqlctx, Instruction* ins)
 {
     printf("Execute string ins.\n");
     g_registers[ins->p2].n = strlen(ins->p4.s);
@@ -150,46 +232,59 @@ static void execute_string(SqlPrepareContext* sqlctx, Intstruction* ins)
     g_registers[ins->p2].value.s = strdup(ins->p4.s);
 }
 // 组装序列化bytes，
-static void execute_makerecord(SqlPrepareContext* sqlctx, Intstruction* ins)
+static void execute_makerecord(SqlPrepareContext* sqlctx, Instruction* ins)
 {
-    // lengthi的长度目前就是 2个字节
-    // TODO 需要把cell中的data序列化和反序列化。 格式为：<length1><data1><length2><data2>..
+    // 格式: <len1><data1><len2><data2>...
     size_t bytesize = 0;
-    for (size_t i = ins->p1; i < ins->p2; i++)
-    {
-        bytesize += 2; // <length>
-        bytesize += g_registers[i].n; // <data>
+    for (size_t i = ins->p1; i <= ins->p2; i++) {
+        bytesize += 2; // length field
+        bytesize += g_registers[i].n;
     }
-    uint8_t* bytes = malloc(bytesize); // 序列化
+
+    uint8_t* bytes = malloc(bytesize);
+    if (!bytes) {
+        fprintf(stderr, "malloc failed in makerecord\n");
+        return;
+    }
+
     size_t bi = 0;
-    for (size_t i = ins->p1; i < ins->p2; i++)
-    {
+    for (size_t i = ins->p1; i <= ins->p2; i++) {
         switch (g_registers[i].flags)
         {
-        case REG_I32:
-            bytes[bi++] = 0;
-            bytes[bi++] = 4;
-            bytes[bi++] = g_registers[i].value.i32 & 0xff000000>> 24;
-            bytes[bi++] = g_registers[i].value.i32 & 0x00ff0000>> 16;
-            bytes[bi++] = g_registers[i].value.i32 & 0x0000ff00>> 8;
-            bytes[bi++] = g_registers[i].value.i32 & 0x000000ff;
+        case REG_I32: {
+            uint16_t len = 4;
+            int32_t v = g_registers[i].value.i32;
+            bytes[bi++] = (len >> 8) & 0xff;
+            bytes[bi++] = len & 0xff;
+            bytes[bi++] = (v >> 24) & 0xff;
+            bytes[bi++] = (v >> 16) & 0xff;
+            bytes[bi++] = (v >> 8) & 0xff;
+            bytes[bi++] = v & 0xff;
             break;
-        case REG_STR:
-            bytes[bi++] = strlen(g_registers[i].value.s) & 0xff00 >> 8;
-            bytes[bi++] = strlen(g_registers[i].value.s) & 0x00ff;
-            memcpy(bytes + bi, g_registers[i].value.s, g_registers[i].n);
-            bi += g_registers[i].n;
+        }
+        case REG_STR: {
+            uint16_t len = g_registers[i].n;
+            bytes[bi++] = (len >> 8) & 0xff;
+            bytes[bi++] = len & 0xff;
+            if (g_registers[i].value.s && len > 0) {
+                memcpy(bytes + bi, g_registers[i].value.s, len);
+                bi += len;
+            }
             break;
+        }
         default:
+            fprintf(stderr, "makerecord: unsupported reg type %d\n", g_registers[i].flags);
             break;
         }
     }
+
     g_registers[ins->p3].flags = REG_BYTES;
     g_registers[ins->p3].value.bytes = bytes; 
     g_registers[ins->p3].n = bytesize;
 }
 
-static void execute_insert(SqlPrepareContext* sqlctx, Intstruction* ins)
+
+static void execute_insert(SqlPrepareContext* sqlctx, Instruction* ins)
 {
     printf("Execute insert ins.\n");
     Cursor* cursor = g_vdb_cursors[ins->p1];
@@ -199,11 +294,10 @@ static void execute_insert(SqlPrepareContext* sqlctx, Intstruction* ins)
     //
     btree_insert(cursor->btree, rowid, bytes, bytesize);
 }
-static void execute_newrowid(SqlPrepareContext* sqlctx, Intstruction* ins)
+static void execute_newrowid(SqlPrepareContext* sqlctx, Instruction* ins)
 {
     printf("Execute newrowid ins.\n");
     Cursor* cursor = g_vdb_cursors[ins->p1];
-    // TODO create new rowid
     int rowid = btree_get_newrowid(cursor->btree); // 获取btree最右边孩子的key，
     g_registers[ins->p2].flags = REG_I32;
     g_registers[ins->p2].value.i32 = rowid;
@@ -213,63 +307,70 @@ static void execute_newrowid(SqlPrepareContext* sqlctx, Intstruction* ins)
 void vdbe_run(SqlPrepareContext *sqlctx)
 {
     printf("VDBE run for sql: [%s]\n", sqlctx->sql);
-    Intstruction *ins;
+    Instruction *ins;
     InstructionList *inslist = sqlctx->inslist;
     print_inslist(inslist);
-    printf("Begin execute instructions:\n");    
-    for (size_t pc = 0; pc < inslist->nints; )
+    printf("Begin execute instructions:\n");   
+    // 按理来说，halt时候就可以直接return了 
+    for (; g_pc < inslist->nints && !g_halt_flag; )
     {
-        ins = sqlctx->inslist->ints[pc];
+        ins = sqlctx->inslist->ints[g_pc];
         switch (ins->opcode)
         {
         case Init:
             execute_init(sqlctx, ins);
-            pc++;
+            g_pc++;
             break;
         case OpenRead:
-            pc++;
+            execute_openread(sqlctx, ins);
+            g_pc++;
             break;
         case Rewind:
-            pc++;
+            execute_rewind(sqlctx, ins);
+            g_pc++;
             break;
             ;
         case Column:
-            pc++;
+            execute_column(sqlctx, ins);
+            g_pc++;
             break;
         case ResultRow:
-            pc++;
+            execute_resultrow(sqlctx, ins);
+            g_pc++;
             break;
         case Next:
-            pc++;
+            execute_next(sqlctx, ins);
+            g_pc++;
             break;
         case Halt:
-            pc++;
+            execute_halt(sqlctx, ins);
+            g_pc++;
             break;
         case Transaction:
-            pc++;
+            g_pc++;
             break;
         case Goto:
-            pc = ins->p1;
+            g_pc = ins->p1;
             break;
         case OpenWrite:
             execute_openwrite(sqlctx, ins);
-            pc++;
+            g_pc++;
             break;
         case String:
             execute_string(sqlctx, ins);
-            pc++;
+            g_pc++;
             break;
         case MakeRecord:
             execute_makerecord(sqlctx, ins);
-            pc++;
+            g_pc++;
             break;
         case Insert:
             execute_insert(sqlctx, ins);
-            pc++;
+            g_pc++;
             break;
         case NewRowid:
             execute_newrowid(sqlctx, ins);
-            pc++;
+            g_pc++;
             break;
         default:
             printf("run unkown opcode [%d]", ins->opcode);
