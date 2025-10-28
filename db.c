@@ -83,17 +83,73 @@ DB* db_open(const char *file_name)
     } else {
         // db不空。 
         BTree* tree = btree_get(0, pager);
-        printf("(debug) btree page0 ok.\n");
         size_t ntabs;
-        uint8_t** data;
-        btree_select(tree, &ntabs, data);
-        printf("(debug) btree select page0 ok.\n");
+        uint8_t** data = NULL;
+        btree_select(tree, &ntabs, &data);
         db->tabs = malloc(sizeof(Table*) *ntabs);
         printf("Db open, master load %ld tabs\n", ntabs);
         for (size_t i = 0; i < ntabs; i++)
         {
-            // 先固定长度，仅仅支持字段类型定长
-            // type(16) name(16) tbl_name(16) root_page(4) sql(128)  
+            // 解析表的元信息
+            // type name root_page sql  
+            db->tabs[i] = malloc(sizeof(Table));
+            Table* tab = db->tabs[i];
+            uint8_t* tabmeta = data[i];
+
+            int k = 0;
+            int typelen = tabmeta[k] << 8 | tabmeta[k + 1];
+            k += 2 + typelen;
+
+            int namelen = tabmeta[k] << 8 | tabmeta[k + 1];
+            k += 2;
+            tab->name = malloc(namelen + 1);
+            memcpy(tab->name, tabmeta + k, namelen);
+            tab->name[namelen] = '\0';
+            k += namelen;
+
+            int root_pagenum_len = tabmeta[k] << 8 | tabmeta[k + 1];
+            assert(root_pagenum_len == 4);
+            k += 2;
+            int root_pagenum = (tabmeta[k] << 24) | (tabmeta[k + 1] << 16) 
+                | (tabmeta[k + 2] << 8) | (tabmeta[k + 3]);
+            tab->tree = btree_get(root_pagenum, db->pager);
+            k += 4;
+
+            // 从sql中解析列名
+            int sql_len = (tabmeta[k] << 8) | (tabmeta[k + 1]);
+            k += 2;
+            char* sql = malloc(sql_len + 1);
+            memcpy(sql, tabmeta + k, sql_len);
+            sql[sql_len] = '\0';
+            char* start = strchr(sql, '(');
+            char* end = strchr(sql, ')');
+            tab->cols = NULL;
+            tab->ncol = 0;
+            if (start && end && end > start) {
+                char cols[128];
+                size_t len = end - start - 1;
+                strncpy(cols, start + 1, len);
+                cols[len] = '\0';
+                // 拆分
+                char* token = strtok(cols, ",");
+                while (token)
+                {
+                    tab->ncol ++;
+                    tab->cols = realloc(tab->cols, tab->ncol * sizeof(char*));
+                    tab->cols[tab->ncol - 1] = strdup(token);
+                    token = strtok(NULL, ",");
+                }
+            }
+            
+            // print table meta
+            printf("[%d] name(%s) root_pagenum(%d) | cols: ", i, tab->name, tab->tree->root_page_num);
+            for (size_t i = 0; i < tab->ncol; i++)
+            {
+                printf("%s ", tab->cols[i]);
+            }
+            printf("\n");
+            
+            
         }
     }
 

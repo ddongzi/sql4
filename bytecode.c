@@ -17,6 +17,19 @@ static int next_cursor_num = 0;
     Instruction* ins = vdbe_new_ins(Init, 0, 0, 0, (union P4_t){0});
     return ins;
 }
+/**
+ * 为新的tree分配一个页码
+ * p1: 页码存放的寄存器
+ * p2: 0 not used
+ * p3: 0 not used
+ * p4: 0 not used
+ */
+Instruction* bytecode_createbtree()
+{
+    Instruction* ins = vdbe_new_ins(CreateBtree, nex_reg_num++, 0, 0, (union P4_t){0});
+    return ins;
+}
+
 // TODO 还是需要把把master的一些表的元信息 缓存到内存结构中， 这个时候不经过字节码 直接取btree
 /**
  * p1: 游标编号
@@ -104,6 +117,19 @@ Instruction* bytecode_string(char* s)
     return ins;
 }
 /**
+ * p1: src register num
+ * p2: dest register num
+ * p3: 0 not used
+ * p4: 0 not used
+ */
+Instruction* bytecode_copy(uint32_t p1)
+{
+    Instruction* ins = vdbe_new_ins(Copy, p1, nex_reg_num++, 0,(union P4_t){0} );
+    return ins;
+}
+
+
+/**
  * P1: 起始寄存器
  * P2: 终止寄存器（与sqlite不同）
  * P3：目标寄存器
@@ -115,7 +141,7 @@ Instruction* bytecode_mkrecord(int32_t p1, int32_t p2)
     return ins;   
 }
 /**
- * 将打包的记录插入表
+ * 将打包的记录插入表。不含一些信息，如rootpagenum
  * P1: cursor 编号
  * p2: mkrecord的寄存器编号
  * p3: rowid的寄存器编号
@@ -175,6 +201,7 @@ Instruction*  bytecode_resultrow(int p1, int p2)
     int col_reg1 = 0, col_reg2 = 0;
     for (int i = 0; i < selectst->col_list->nexpr; i++)
     {
+        // TODO 怎么知道是对应第几列
         struct Expr* expr = selectst->col_list->items[i];
         Instruction* col_ins = bytecode_column(i + 1);
         vdbe_inslist_add(inslist, col_ins);
@@ -204,6 +231,7 @@ Instruction*  bytecode_resultrow(int p1, int p2)
 void bytecode_create_table(struct CreateStmt* creatst,  SqlPrepareContext* sqlctx)
 {
     // Init
+    // CreateBtree 得到一个新的page
     // Transcation 开启事务
     // OpenWrite 打开master
     // NewRowid 为master表生成新rowid
@@ -220,6 +248,9 @@ void bytecode_create_table(struct CreateStmt* creatst,  SqlPrepareContext* sqlct
     ins = bytecode_init();
     vdbe_inslist_add(inslist, ins);
 
+    Instruction* createbtree_ins = bytecode_createbtree();
+    vdbe_inslist_add(inslist, createbtree_ins);
+
     Instruction* openwt_ins = bytecode_openwrite();
     vdbe_inslist_add(inslist, openwt_ins);
     
@@ -231,10 +262,13 @@ void bytecode_create_table(struct CreateStmt* creatst,  SqlPrepareContext* sqlct
     
     Instruction* tabname_ins = bytecode_string(creatst->table_ref->name);
     vdbe_inslist_add(inslist, tabname_ins);
+
+    Instruction* copy_ins = bytecode_copy(createbtree_ins->p1);
+    vdbe_inslist_add(inslist, copy_ins);
     
     Instruction* sql_ins = bytecode_string(sqlctx->sql);
     vdbe_inslist_add(inslist, sql_ins);
-    
+
     Instruction* mkrcrd_ins = bytecode_mkrecord(typeins->p2, sql_ins->p2);
     vdbe_inslist_add(inslist, mkrcrd_ins);
 

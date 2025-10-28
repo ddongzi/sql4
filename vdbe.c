@@ -116,6 +116,12 @@ void print_inslist(InstructionList* inslist)
             case NewRowid:
                 printf("%10s %6d %6d %6d %d\n", "NewRowid", ins->p1, ins->p2, ins->p3, ins->p4.i32);
                 break;
+            case CreateBtree:
+                printf("%10s %6d %6d %6d %d\n", "CreateBtree", ins->p1, ins->p2, ins->p3, ins->p4.i32);
+                break;
+            case Copy:
+                printf("%10s %6d %6d %6d %d\n", "Copy", ins->p1, ins->p2, ins->p3, ins->p4.i32);
+                break; 
             default:
                 printf("%10s ", "unknown");
                 sql4_errno = VDBE_UNKOWN_OPCODE_ERR;
@@ -181,7 +187,6 @@ static void execute_resultrow(SqlPrepareContext* sqlctx, Instruction* ins)
 
 static void execute_column(SqlPrepareContext* sqlctx, Instruction* ins)
 {
-    // TODO 有问题！
     printf("execute column\n");
     Cursor* cursor = g_vdb_cursors[ins->p1];
     int coli = ins->p2;
@@ -294,13 +299,27 @@ static void execute_insert(SqlPrepareContext* sqlctx, Instruction* ins)
     //
     btree_insert(cursor->btree, rowid, bytes, bytesize);
 }
+static void execute_createbtree(SqlPrepareContext* sqlctx, Instruction* ins)
+{
+    // 创建一个空树，添加到pager
+    int root_pagenum = pager_get_unused_pagenum(sqlctx->pager);
+    pager_add_page(sqlctx->pager, root_pagenum);
+    g_registers[ins->p1].value.i32 = root_pagenum;
+    g_registers[ins->p1].flags = REG_I32;
+    g_registers[ins->p1].n = 4;
+}
+static void execute_copy(SqlPrepareContext* sqlctx, Instruction* ins)
+{
+    memcpy(&g_registers[ins->p2], &g_registers[ins->p1], sizeof(Register));
+}
+
 static void execute_newrowid(SqlPrepareContext* sqlctx, Instruction* ins)
 {
     printf("Execute newrowid ins.\n");
     Cursor* cursor = g_vdb_cursors[ins->p1];
     int rowid = btree_get_newrowid(cursor->btree); // 获取btree最右边孩子的key，
     g_registers[ins->p2].flags = REG_I32;
-    g_registers[ins->p2].value.i32 = rowid;
+    g_registers[ins->p2].value.i32 = rowid + 1;
     g_registers[ins->p2].n = 4;
 }
 // 运行字节码
@@ -370,6 +389,14 @@ void vdbe_run(SqlPrepareContext *sqlctx)
             break;
         case NewRowid:
             execute_newrowid(sqlctx, ins);
+            g_pc++;
+            break;
+        case CreateBtree:
+            execute_createbtree(sqlctx, ins);
+            g_pc++;
+            break;
+        case Copy:
+            execute_copy(sqlctx, ins);
             g_pc++;
             break;
         default:

@@ -1163,7 +1163,9 @@ uint8_t* btree_cursor_value(Cursor *cursor)
 {
     uint8_t page_num = cursor->page_num;
     leaf_node_t *node = (leaf_node_t*)pager_get_page(cursor->btree->pager, page_num);
-    return &node->cells[cursor->cell_num].data;
+    uint8_t* row = malloc(CELL_DATA_SIZE);
+    memcpy(row, &node->cells[cursor->cell_num].data, CELL_DATA_SIZE);
+    return row;
 }
 void btree_cursor_free(Cursor* cursor)
 {
@@ -1256,6 +1258,7 @@ void btree_print(BTree * tree)
  */
 SQL4_CODE btree_insert(BTree* tree, uint32_t key, uint8_t* data, size_t datalen)
 {
+    printf("Btree [%d] insert : key [%d] datalen [%d]\n", tree->root_page_num, key, datalen); 
     Cursor *cursor = btree_cursor_find(tree, key);
     leaf_node_t* node = (leaf_node_t*)pager_get_page(tree->pager, cursor->page_num);
 
@@ -1271,13 +1274,12 @@ SQL4_CODE btree_insert(BTree* tree, uint32_t key, uint8_t* data, size_t datalen)
 }
 /**
  * @brief select all
- * @param [out] selectsize
- * @param [out] data : 数组元素是指针， 指针是指向cell的data。 需要外部cpy成具体类型。
+ * @param [out] selectsize 返回的行数
+ * @param [out] data 二维数组，每行是对应数据
  */
-SQL4_CODE btree_select(BTree* tree, size_t* selectsize, uint8_t** data)
+SQL4_CODE btree_select(BTree* tree, size_t* selectsize, uint8_t*** data)
 {
     Cursor *cursor = btree_cursor_start(tree);
-    printf("(debug) btree cursor start a tree\n");
     size_t retsize = 0;
     uint8_t** retdata = NULL;
     while (!cursor->end_of_table) {
@@ -1301,7 +1303,7 @@ SQL4_CODE btree_select(BTree* tree, size_t* selectsize, uint8_t** data)
     free(cursor);
     
     *selectsize = retsize;
-    data = retdata;
+    *data = retdata;
 
     return BTREE_SELECT_SUCCESS;
 }
@@ -1321,17 +1323,16 @@ SQL4_CODE btree_delete(BTree* tree, uint32_t key)
 // 对一个空白树，做最基本的设置，
 void btree_init(uint32_t root_pagenum, Pager* pager)
 {
-    printf("init a blank btree");
+    printf("init a blank btree\n");
     // 空白页是 root， 是leaf 
-    // common headr:
-    node_t *root = (node_t*)pager_get_page(pager, 0);
+    node_t *root = (node_t*)pager_get_page(pager, root_pagenum);
     root->leaf.meta.is_root = 1;
     root->leaf.meta.node_type = NODE_LEAF;
     root->leaf.meta.page_num = root_pagenum;
     root->leaf.meta.parent_page_num = INVALID_PAGE_NUM;
     root->leaf.num_cells = 0;
     root->leaf.next_leaf_page_num = INVALID_PAGE_NUM;
-    pager_flush(pager, 0);
+    pager_flush(pager, root_pagenum);
 }
 
 // 获取一个树（rootpagenum）。可能树空、可能不空

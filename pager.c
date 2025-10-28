@@ -34,7 +34,7 @@ void pager_add_page(Pager* p, uint32_t page_num) {
     p->num_pages += 1;
     p->pages = realloc(p->pages, sizeof(void*) * (p->num_pages));   
     printf("pager add page [%d] done\n", page_num); 
-    // TODO 对btree做一些最基本的初始化设置：leafnode
+    // 对btree做一些最基本的初始化设置：leafnode
     btree_init(page_num, p);
 }
 

@@ -28,6 +28,7 @@ typedef struct  {
 } Instruction;
 enum OPCode{ 
     Init,
+    CreateBtree,
     OpenRead,
     Rewind,
     Column,
@@ -35,6 +36,7 @@ enum OPCode{
     Next,
     Halt,
     String,
+    Copy,
     MakeRecord,
     Transaction,
     Goto,
