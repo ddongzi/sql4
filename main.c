@@ -47,7 +47,8 @@ void read_input(char* input)
 // AST, 字节码生成
 void prepare_sqlctx(DB* db, char* sql, SqlPrepareContext *sqlctx)
 {
-    sqlctx->pager = db->pager;
+    sqlctx->buffer = calloc(1, sizeof(ResultBuffer));
+    sqlctx->db = db;
     sqlctx->sql = strdup(sql);
     sqlctx->ast = NULL; // 在orange_parse分配设置
     sqlctx->inslist = NULL; // 在bytecode_generate分配设置
@@ -59,22 +60,30 @@ void execute_sqlctx(SqlPrepareContext* sqlctx)
 {
     vdbe_run(sqlctx);
     printf("Execute sql done: [%s]\n", sqlctx->sql);
-    printf("Sql result: \n");
-    // TODO 需要数据解析 <length><data><length><data>....
-    char s[512] = {0}; // (debug)
-    for (size_t i = 0; i < sqlctx->nbuf; i)
+    // ResultBuffer....
+    ResultBuffer* result = sqlctx->buffer;
+    printf("Sql result: total [%d] rows.\n", result->nrow);
+    for (size_t i = 0; i < result->nrow; i++)
     {
-        int len = sqlctx->buffer[i] << 8 | sqlctx->buffer[i+1];
-        i += 2;
-        printf("(debug) result: %d \n", len);
-        assert(len < 512);
-        memcpy(s, sqlctx->buffer + i, len);
-        s[len] = '\0';
-        printf("%s\n", s);
-        i += len;
-        memset(s, 0, 512);
+        Row* row = result->data[i];
+        // <len><data><><>
+        int rj = 0;
+        int len = 0;
+        printf("row[%d]:", i);
+        while (rj < row->n)
+        {
+            len = row->data[rj] << 8 | row->data[rj + 1];
+            rj += 2;
+            char* s = malloc(len + 1);
+            memcpy(s, row->data + rj, len);
+            s[len] = '\0';
+            rj += len;
+            printf("<%d><%s>,", len, s);
+            free(s);
+        }
+        printf("\n");
+        
     }
-    printf("\n");
     
 }
 // TODO 临时，单表支持

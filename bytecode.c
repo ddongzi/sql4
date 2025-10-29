@@ -5,6 +5,7 @@
 #include "bytecode.h"
 #include "vdbe.h"
 #include "db.h"
+#include <string.h>
 
 extern DB* g_db;
 // 编译时候的寄存器编号，仅仅是逻辑占位。在执行时候可以直接映射到数组index，也可以进行循环复用
@@ -199,11 +200,21 @@ Instruction*  bytecode_resultrow(int p1, int p2)
 
     int col_start_addr = nins;
     int col_reg1 = 0, col_reg2 = 0;
+    Table* tabmeta = db_get_table(sqlctx->db, tabname);
     for (int i = 0; i < selectst->col_list->nexpr; i++)
     {
-        // TODO 怎么知道是对应第几列
+        int colk = 0;
         struct Expr* expr = selectst->col_list->items[i];
-        Instruction* col_ins = bytecode_column(i + 1);
+        // 查找列名对应元信息的列id
+        for (size_t j = 0; j < tabmeta->ncol; j++)
+        {
+            if (strcmp(expr->name, tabmeta->cols[j]) == 0) {
+                colk = j;
+                break;
+            }
+        }
+        
+        Instruction* col_ins = bytecode_column(colk + 1);
         vdbe_inslist_add(inslist, col_ins);
         if (col_ins->p3 < col_reg1) col_reg1 = col_ins->p3;
         if (col_ins->p3 > col_reg2) col_reg2 = col_ins->p3;
@@ -260,8 +271,11 @@ void bytecode_create_table(struct CreateStmt* creatst,  SqlPrepareContext* sqlct
     Instruction* typeins = bytecode_string("table");
     vdbe_inslist_add(inslist, typeins);
     
-    Instruction* tabname_ins = bytecode_string(creatst->table_ref->name);
-    vdbe_inslist_add(inslist, tabname_ins);
+    Instruction* name_ins = bytecode_string(creatst->table_ref->name);
+    vdbe_inslist_add(inslist, name_ins);
+
+    Instruction* tblname_ins = bytecode_string(creatst->table_ref->name);
+    vdbe_inslist_add(inslist, tblname_ins);
 
     Instruction* copy_ins = bytecode_copy(createbtree_ins->p1);
     vdbe_inslist_add(inslist, copy_ins);

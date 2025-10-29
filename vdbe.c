@@ -175,13 +175,24 @@ static void execute_halt(SqlPrepareContext* sqlctx, Instruction* ins)
 static void execute_resultrow(SqlPrepareContext* sqlctx, Instruction* ins)
 {
     printf("execute resultrow\n");
+    ResultBuffer* result = sqlctx->buffer;
+    result->nrow += 1;
+    result->data = realloc(result->data, result->nrow * sizeof(Row*)); // 新增一行
+    // TODO 默认一行最长
+    result->data[result->nrow - 1] = malloc(sizeof(Row)); // 为新的一行分配内存
+    // 拼接
+    Row* row = result->data[result->nrow - 1];
+    int bdi = 0;
     for (size_t i = ins->p1; i <= ins->p2; i++)
     {
+        // <len1><d1><len2><d2>
         uint8_t* data = g_registers[i].value.bytes;
         int n = g_registers[i].n;
-        sqlctx->buffer = realloc(sqlctx->buffer, sqlctx->nbuf + n);
-        memcpy(sqlctx->buffer, data, n);
-        sqlctx->nbuf += n;        
+        row->n += n;
+        row->data = realloc(row->data, row->n);
+        memcpy(row->data + row->n - n, data, n);
+        printf("(debug) add reg[%d], [%d]bytes to row\n", i, n);
+
     }
 }
 
@@ -198,12 +209,12 @@ static void execute_column(SqlPrepareContext* sqlctx, Instruction* ins)
     {
         int len = (data[j] << 8 | data[j+1]);
         if (i == coli - 1) {
-            g_registers[ins->p3].n = len;
             uint8_t* tmp = malloc(2 + len);
             memcpy(tmp, data + j, 2 + len);
             g_registers[ins->p3].value.bytes = tmp;
             g_registers[ins->p3].flags = REG_BYTES;
-            printf("(debug) colidata len [%d]\n ", len);
+            g_registers[ins->p3].n = 2 + len;
+
         } 
         j += 2 + len;
     }
@@ -214,7 +225,7 @@ static void execute_openread(SqlPrepareContext* sqlctx, Instruction* ins)
 {
     printf("Execute openread ins.\n");
     uint32_t root_pagenum = ins->p2;
-    Cursor* cursor = btree_cursor_start(btree_get(root_pagenum, sqlctx->pager));
+    Cursor* cursor = btree_cursor_start(btree_get(root_pagenum, sqlctx->db->pager));
     // 需要与cursor编号绑定。
     g_vdb_cursors[ins->p1] = cursor;
 }
@@ -224,7 +235,7 @@ static void execute_openwrite(SqlPrepareContext* sqlctx, Instruction* ins)
 {
     printf("Execute openwrite ins.\n");
     uint32_t root_pagenum = ins->p2;
-    Cursor* cursor = btree_cursor_start(btree_get(root_pagenum, sqlctx->pager));
+    Cursor* cursor = btree_cursor_start(btree_get(root_pagenum, sqlctx->db->pager));
     // 需要与cursor编号绑定。
     g_vdb_cursors[ins->p1] = cursor;
 }
@@ -302,8 +313,8 @@ static void execute_insert(SqlPrepareContext* sqlctx, Instruction* ins)
 static void execute_createbtree(SqlPrepareContext* sqlctx, Instruction* ins)
 {
     // 创建一个空树，添加到pager
-    int root_pagenum = pager_get_unused_pagenum(sqlctx->pager);
-    pager_add_page(sqlctx->pager, root_pagenum);
+    int root_pagenum = pager_get_unused_pagenum(sqlctx->db->pager);
+    pager_add_page(sqlctx->db->pager, root_pagenum);
     g_registers[ins->p1].value.i32 = root_pagenum;
     g_registers[ins->p1].flags = REG_I32;
     g_registers[ins->p1].n = 4;

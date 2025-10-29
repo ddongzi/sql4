@@ -1344,7 +1344,6 @@ BTree* btree_get(uint32_t root_pagenum, Pager* pager)
     tree->pager = pager;
     // 检测该tree是否是新的，即table是否空, 如果空，pager要扩容
     if (!pager_has_page(pager, root_pagenum)) {
-        printf("(debug) pagenum[%d] out of p.numpages[%d]\n", root_pagenum, pager->num_pages);
         pager_add_page(pager, root_pagenum);
     }
     return tree;

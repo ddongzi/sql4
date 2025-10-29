@@ -46,7 +46,7 @@ void db_close(DB* db)
 void init_master(DB* db)
 {
     Table* master = malloc(sizeof(Table));
-    // type(16) name(16) tbl_name(16) root_page(4) sql(128)  
+    // type name tbl_name root_page sql  
     master->ncol = 5;
     master->cols = malloc(sizeof(char*) * master->ncol);
     master->cols[0] = "type";
@@ -88,10 +88,11 @@ DB* db_open(const char *file_name)
         btree_select(tree, &ntabs, &data);
         db->tabs = malloc(sizeof(Table*) *ntabs);
         printf("Db open, master load %ld tabs\n", ntabs);
+        printf("Table master:\n[id] | name | root_pagenum | cols\n");
         for (size_t i = 0; i < ntabs; i++)
         {
             // 解析表的元信息
-            // type name root_page sql  
+            // type name tbl_name root_page sql
             db->tabs[i] = malloc(sizeof(Table));
             Table* tab = db->tabs[i];
             uint8_t* tabmeta = data[i];
@@ -106,6 +107,10 @@ DB* db_open(const char *file_name)
             memcpy(tab->name, tabmeta + k, namelen);
             tab->name[namelen] = '\0';
             k += namelen;
+            // 暂时没有用
+            int tblnamelen = tabmeta[k] << 8 | tabmeta[k + 1];
+            k += 2;
+            k += tblnamelen;
 
             int root_pagenum_len = tabmeta[k] << 8 | tabmeta[k + 1];
             assert(root_pagenum_len == 4);
@@ -142,7 +147,7 @@ DB* db_open(const char *file_name)
             }
             
             // print table meta
-            printf("[%d] name(%s) root_pagenum(%d) | cols: ", i, tab->name, tab->tree->root_page_num);
+            printf("[%d]: %s %d | cols: ", i, tab->name, tab->tree->root_page_num);
             for (size_t i = 0; i < tab->ncol; i++)
             {
                 printf("%s ", tab->cols[i]);
