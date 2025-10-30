@@ -5,6 +5,8 @@
 #include "sql4code.h"
 #include "db.h"
 #include "btree.h"
+#include "table.h"
+
 DB* g_db = NULL; // 目前仅支持一个库
 Table* db_get_table(DB* db, char* name)
 {
@@ -20,6 +22,14 @@ Table* db_get_table(DB* db, char* name)
     sql4_errno = TABLE_NOT_EXIST_ERR;
     return NULL;
 }
+void free_table(Table* table)
+{
+    for (size_t i = 0; i < table->ncol; i++)
+    {
+        free(table->cols[i]);
+    }
+    free(table);
+}
 
 /*
  * 1. 缓存刷新到盘
@@ -29,17 +39,13 @@ Table* db_get_table(DB* db, char* name)
 void db_close(DB* db)
 {
     printf("db closing..\n");
-    Pager *pager = db->pager;
-    assert(pager);
-
-    for (uint32_t i = 0; i < pager->num_pages; ++i) {
-        if (pager_get_page(pager, i) == NULL) {
-            continue;
-        }
-        pager_flush(pager, i);
-        pager_free_page(pager, i);
+    pager_free(db->pager);
+    free_table(db->master);
+    for (size_t i = 0; i < db->ntab; i++)
+    {
+        free_table(db->tabs[i]);
     }
-    free(pager);
+    free(db);
     printf("db closed.\n");
 }
 // 初始化db的table master结构
@@ -147,15 +153,15 @@ DB* db_open(const char *file_name)
             }
             
             // print table meta
-            printf("[%d]: %s %d | cols: ", i, tab->name, tab->tree->root_page_num);
+            printf("[%ld]: %s %d | cols: ", i, tab->name, tab->tree->root_page_num);
             for (size_t i = 0; i < tab->ncol; i++)
             {
                 printf("%s ", tab->cols[i]);
             }
+            free(tabmeta);
             printf("\n");
-            
-            
         }
+        free(data);
     }
 
     

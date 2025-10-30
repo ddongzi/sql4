@@ -11,3 +11,4 @@ select a,b from tb;selct name,age from tb;
 create table tb (name,age);
 
 select type,name,sql,root_pagenum from master;
+

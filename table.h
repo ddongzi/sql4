@@ -13,6 +13,6 @@ typedef struct  {
 } Table;
 
 // 
-Table* init_table(uint32_t root_pgnum, char* name, char** cols, int ncol);
+void free_table(Table* table);
 
 #endif // TABLE_H

@@ -73,7 +73,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
-#include "orange.h"
+#include "oranger.h"
 int yylex(void);  // flex
 void yyerror(char* s, ...);
 extern struct StmtList* root;
@@ -1098,13 +1098,13 @@ yyreduce:
 
   case 4: /* stmt_list: stmt  */
 #line 44 "orange.y"
-                  { stmtListAdd((yyvsp[0].stmtVal));  (yyval.stmtListVal) = root;}
+                  { printf("(debug) here1!\n"); stmtListAdd((yyvsp[0].stmtVal));  (yyval.stmtListVal) = root;}
 #line 1103 "build/orange.tab.c"
     break;
 
   case 5: /* stmt_list: stmt_list stmt  */
 #line 45 "orange.y"
-                          { stmtListAdd((yyvsp[0].stmtVal)); (yyval.stmtListVal) = (yyvsp[-1].stmtListVal); }
+                          { printf("(debug) here2!\n"); stmtListAdd((yyvsp[0].stmtVal)); (yyval.stmtListVal) = (yyvsp[-1].stmtListVal); }
 #line 1109 "build/orange.tab.c"
     break;
 

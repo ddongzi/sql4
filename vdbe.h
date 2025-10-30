@@ -74,6 +74,7 @@ typedef struct {
 } SqlPrepareContext;
 
 void vdbe_run(SqlPrepareContext* );
+void vdbe_destroy(SqlPrepareContext* sqlctx);
 
 Instruction* vdbe_new_ins(int opcode, int32_t p1, int32_t p2, int32_t p3, union P4_t p4);
 

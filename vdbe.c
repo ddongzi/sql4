@@ -47,6 +47,10 @@ Instruction* vdbe_new_ins(int opcode, int32_t p1, int32_t p2, int32_t p3, union 
     ins->p4 = p4;
     return ins;
 }
+void free_ins(Instruction* ins)
+{
+    free(ins);
+}
 InstructionList* vdbe_new_inslist()
 {
     InstructionList* inslist = malloc(sizeof(InstructionList));
@@ -60,7 +64,14 @@ void vdbe_inslist_add(InstructionList* inslist, Instruction* ins)
     inslist->ints[inslist->nints] = ins;
     inslist->nints += 1;
 }
-
+void free_inslist(InstructionList* inslist)
+{
+    for (size_t i = 0; i < inslist->nints; i++)
+    {
+        free_ins(inslist->ints[i]);
+    }
+    free(inslist);
+}
 
 void print_inslist(InstructionList* inslist)
 {
@@ -155,8 +166,8 @@ static void execute_next(SqlPrepareContext* sqlctx, Instruction* ins)
 }
 static void execute_halt(SqlPrepareContext* sqlctx, Instruction* ins)
 {
+    // 重置vdbe状态, 释放打开的cursor
     g_halt_flag = true;
-    // 重置vdbe状态
     printf("execute halt\n");
     g_pc = 0;
     for (size_t i = 0; i < MAX_OPEN_CURSOR; i++)
@@ -191,9 +202,22 @@ static void execute_resultrow(SqlPrepareContext* sqlctx, Instruction* ins)
         row->n += n;
         row->data = realloc(row->data, row->n);
         memcpy(row->data + row->n - n, data, n);
-        printf("(debug) add reg[%d], [%d]bytes to row\n", i, n);
+        printf("(debug) add reg[%ld], [%d]bytes to row\n", i, n);
 
     }
+}
+static void free_row(Row* row)
+{
+    free(row->data);
+    free(row);
+}
+static void free_resultbuf(ResultBuffer* resbuf)
+{
+    for (size_t i = 0; i < resbuf->nrow; i++)
+    {
+        free_row(resbuf->data[i]);
+    }
+    free(resbuf);
 }
 
 static void execute_column(SqlPrepareContext* sqlctx, Instruction* ins)
@@ -418,3 +442,11 @@ void vdbe_run(SqlPrepareContext *sqlctx)
     // debug 临时 保证以前程序正常
     printf("Vdbe run ok.\n");
 }
+void vdbe_destroy(SqlPrepareContext* sqlctx)
+{
+    free_inslist(sqlctx->inslist);
+    free_resultbuf(sqlctx->buffer);
+    free(sqlctx->sql);
+    printf("vdbe destroyed.\n");
+}
+

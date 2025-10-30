@@ -22,6 +22,8 @@ typedef struct {
 } Pager;
 
 Pager *pager_open(const char *file_name);
+void pager_free(Pager * pager);
+
 void *pager_get_page(Pager* pager, uint8_t page_num);
 void pager_flush(Pager *pager, uint8_t page_num);
 void pager_add_page(Pager* p, uint32_t page_num);

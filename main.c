@@ -18,7 +18,7 @@
 #include "btree.h"
 #include "vdbe.h"
 #include "table.h"
-#include "orange.h"
+#include "oranger.h"
 #include "bytecode.h"
 #include "db.h"
 
@@ -55,6 +55,14 @@ void prepare_sqlctx(DB* db, char* sql, SqlPrepareContext *sqlctx)
     orange_parse(sqlctx); // 解释， 设置ast
     bytecode_generate(sqlctx);// 生成字节码
 }
+void destroy_sqlctx(SqlPrepareContext* sqlctx)
+{
+    orange_destroy(sqlctx);
+    vdbe_destroy(sqlctx);
+    free(sqlctx);
+    printf("sqlctx destroyed.\n");
+}
+
 // 执行sql语句（对应字节码）
 void execute_sqlctx(SqlPrepareContext* sqlctx)
 {
@@ -69,7 +77,7 @@ void execute_sqlctx(SqlPrepareContext* sqlctx)
         // <len><data><><>
         int rj = 0;
         int len = 0;
-        printf("row[%d]:", i);
+        printf("row[%ld]:", i);
         while (rj < row->n)
         {
             len = row->data[rj] << 8 | row->data[rj + 1];
@@ -149,9 +157,10 @@ int main(int argc, char *argv[])
             SqlPrepareContext* sqlctx = malloc(sizeof(SqlPrepareContext));
             prepare_sqlctx(g_db, input, sqlctx);
             execute_sqlctx(sqlctx);
+            destroy_sqlctx(sqlctx);
             continue;
         }
-        printf("UNKOWN input! [%s]", input);
+        printf("UNKOWN input! [%s]\n", input);
     }
     return 0;
 }

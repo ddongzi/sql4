@@ -11,9 +11,8 @@ void* pager_get_pages(Pager* p)
 void pager_free_page(Pager* p, uint32_t page_num)
 {
     void* page = pager_get_page(p, page_num);
-    assert(page);
     free(page);
-    page = NULL;
+    p->pages[page_num] = NULL;
 }
 
 /* 总是假设 0..num_pages-1 已经被分配，*/
@@ -134,4 +133,16 @@ void pager_flush(Pager *pager, uint8_t page_num)
         printf("Error writing: %d\n", errno);
         exit(EXIT_FAILURE);
     }
+}
+void pager_free(Pager * pager)
+{
+    assert(pager);
+    for (uint32_t i = 0; i < pager->num_pages; ++i) {
+        if (pager_get_page(pager, i) == NULL) {
+            continue;
+        }
+        pager_flush(pager, i);
+        pager_free_page(pager, i);
+    }
+    printf("pager free ok");
 }

@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
-#include "orange.h"
+#include "oranger.h"
 int yylex(void);  // flex
 void yyerror(char* s, ...);
 extern struct StmtList* root;
@@ -41,8 +41,8 @@ extern struct StmtList* root;
 input: stmt_list  {  }
         |  {}
         ;
-stmt_list: stmt   { stmtListAdd($1);  $$ = root;}
-        | stmt_list stmt  { stmtListAdd($2); $$ = $1; }
+stmt_list: stmt   { printf("(debug) here1!\n"); stmtListAdd($1);  $$ = root;}
+        | stmt_list stmt  { printf("(debug) here2!\n"); stmtListAdd($2); $$ = $1; }
         ;
 
 stmt: select_stmt { $$ = newStmt(STMT_SELECT, $1);}

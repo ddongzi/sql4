@@ -51,6 +51,7 @@ struct CreateStmt* newCreateStmt(struct ExprList* col_list,struct TableRef* );
 
 void orange_parse(SqlPrepareContext* sqlctx);
 void yyerror(char* s, ...);
+void orange_destroy(SqlPrepareContext* sqlctx);
 
 
 #endif

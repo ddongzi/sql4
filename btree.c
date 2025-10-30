@@ -1157,7 +1157,7 @@ void btree_cursor_advance(Cursor *cursor)
     }
 }
 /**
- * @brief 通过cursor返回data指针。 不感知datalen
+ * @brief 通过cursor返回row data, 需要释放
  */
 uint8_t* btree_cursor_value(Cursor *cursor)
 {
@@ -1258,7 +1258,7 @@ void btree_print(BTree * tree)
  */
 SQL4_CODE btree_insert(BTree* tree, uint32_t key, uint8_t* data, size_t datalen)
 {
-    printf("Btree [%d] insert : key [%d] datalen [%d]\n", tree->root_page_num, key, datalen); 
+    printf("Btree [%d] insert : key [%d] datalen [%ld]\n", tree->root_page_num, key, datalen); 
     Cursor *cursor = btree_cursor_find(tree, key);
     leaf_node_t* node = (leaf_node_t*)pager_get_page(tree->pager, cursor->page_num);
 
