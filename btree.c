@@ -392,6 +392,7 @@ void internal_node_split_and_insert(BTree * tree, uint8_t parent_page_num, uint8
     uint32_t child_max = get_node_max_key(tree, child);
 
     uint8_t new_page_num = pager_get_unused_pagenum(tree->pager);
+    pager_add_emptypage(tree->pager, new_page_num);
 
     uint8_t splitting_root = old_node->meta.is_root; // 记录被分裂节点是否是根节点， 如果是根节点，还需要创建root
     
@@ -461,7 +462,7 @@ void internal_node_split_and_insert(BTree * tree, uint8_t parent_page_num, uint8
 
 
 /**
- * @brief 内部更新，重建root
+ * @brief 做一个新的root，在节点满插入的时候分裂。
  *  
  * @param tree 
  * @param right_child_page_num : the property of new root
@@ -473,6 +474,7 @@ void create_new_root(BTree *tree, uint8_t right_child_page_num)
     node_t *right_child =(node_t *) pager_get_page(tree->pager, right_child_page_num);
 
     uint8_t left_child_page_num = pager_get_unused_pagenum(tree->pager);
+    pager_add_emptypage(tree->pager, left_child_page_num);
     node_t *left_child=(node_t *) pager_get_page(tree->pager, left_child_page_num);
 
     if (get_node_type(root) == NODE_INTERNAL) {
@@ -833,11 +835,11 @@ void internal_node_remove(BTree* tree, internal_node_t *node, uint8_t cell_num)
 
 
 /**
- * @brief 初始化叶子节点
+ * @brief 初始化一个空白叶子节点.
+ * @warning 1. 默认不是root
  */
 void initialize_leaf_node(leaf_node_t *node, uint8_t page_num)
 {
-
     node->meta.node_type = NODE_LEAF;
     node->meta.is_root = 0;
     node->meta.page_num = page_num;
@@ -849,7 +851,7 @@ void initialize_leaf_node(leaf_node_t *node, uint8_t page_num)
 
 /* ===========cursor ============ */
 /**
- * @brief  在cursor位置，插入数据。 btree无需感知。 外部传入的是row .
+ * @brief  在cursor位置，插入数据。 
  */
 void leaf_node_insert(Cursor *cursor, uint32_t key, void* data, size_t datalen)
 {
@@ -892,6 +894,7 @@ void leaf_node_split_and_insert(Cursor *cursor, uint32_t key, void* data, size_t
 
     // 1. 创建一个新叶子节点：作为兄弟节点放在右邻居
     uint8_t new_page_num = pager_get_unused_pagenum(cursor->btree->pager);
+    pager_add_emptypage(cursor->btree->pager, new_page_num);
     leaf_node_t *new_node = (leaf_node_t *)pager_get_page(cursor->btree->pager, new_page_num);
     initialize_leaf_node(new_node, new_page_num);
     new_node->meta.parent_page_num = old_node->meta.parent_page_num;
@@ -1258,7 +1261,7 @@ void btree_print(BTree * tree)
  */
 SQL4_CODE btree_insert(BTree* tree, uint32_t key, uint8_t* data, size_t datalen)
 {
-    printf("Btree [%d] insert : key [%d] datalen [%ld]\n", tree->root_page_num, key, datalen); 
+    printf("Btree pagenum[%d] insert : key [%d] datalen [%ld]\n", tree->root_page_num, key, datalen); 
     Cursor *cursor = btree_cursor_find(tree, key);
     leaf_node_t* node = (leaf_node_t*)pager_get_page(tree->pager, cursor->page_num);
 
@@ -1321,17 +1324,14 @@ SQL4_CODE btree_delete(BTree* tree, uint32_t key)
     return BTREE_DELETE_SUCCESS;
 }
 // 对一个空白树，做最基本的设置，
-void btree_init(uint32_t root_pagenum, Pager* pager)
+void btree_init_anode(uint32_t root_pagenum, Pager* pager)
 {
     printf("init a blank btree\n");
     // 空白页是 root， 是leaf 
-    node_t *root = (node_t*)pager_get_page(pager, root_pagenum);
-    root->leaf.meta.is_root = 1;
-    root->leaf.meta.node_type = NODE_LEAF;
-    root->leaf.meta.page_num = root_pagenum;
-    root->leaf.meta.parent_page_num = INVALID_PAGE_NUM;
-    root->leaf.num_cells = 0;
-    root->leaf.next_leaf_page_num = INVALID_PAGE_NUM;
+    leaf_node_t *root = (leaf_node_t*)pager_get_page(pager, root_pagenum);
+
+    initialize_leaf_node(root, root_pagenum);
+    root->meta.is_root = 1;
     pager_flush(pager, root_pagenum);
 }
 
@@ -1344,7 +1344,7 @@ BTree* btree_get(uint32_t root_pagenum, Pager* pager)
     tree->pager = pager;
     // 检测该tree是否是新的，即table是否空, 如果空，pager要扩容
     if (!pager_has_page(pager, root_pagenum)) {
-        pager_add_page(pager, root_pagenum);
+        pager_add_emptypage(pager, root_pagenum);
     }
     return tree;
 }

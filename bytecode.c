@@ -77,9 +77,9 @@ Instruction* bytecode_rewind(int cursor_num)
  * P3: 目标寄存器
  * P4: 0 not used
  */
-Instruction* bytecode_column(int coli)
+Instruction* bytecode_column(int p1, int p2)
 {
-    Instruction* ins = vdbe_new_ins(Column, 0, coli, nex_reg_num++, (union P4_t){0});
+    Instruction* ins = vdbe_new_ins(Column, p1, p2, nex_reg_num++, (union P4_t){0});
     return ins;
 }
 /** cursor移动到下一行
@@ -214,7 +214,7 @@ Instruction*  bytecode_resultrow(int p1, int p2)
             }
         }
         
-        Instruction* col_ins = bytecode_column(colk + 1);
+        Instruction* col_ins = bytecode_column(openread_ins->p1, colk + 1);
         vdbe_inslist_add(inslist, col_ins);
         if (col_ins->p3 < col_reg1) col_reg1 = col_ins->p3;
         if (col_ins->p3 > col_reg2) col_reg2 = col_ins->p3;

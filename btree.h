@@ -24,11 +24,11 @@ typedef struct {
     BTree *btree;
     uint32_t page_num; //
     uint32_t cell_num;
-    bool end_of_table; // 
+    bool end_of_table; // end表示最后一个cell了
 }Cursor ;
 
 BTree* btree_get(uint32_t root_pagenum, Pager* pager);
-void btree_init(uint32_t root_pagenum, Pager* pager);
+void btree_init_anode(uint32_t root_pagenum, Pager* pager);
 
 Cursor *btree_cursor_start(BTree *tree);
 Cursor *btree_cursor_find(BTree *tree, uint32_t key);

@@ -25,29 +25,32 @@ bool pager_has_page(Pager* p, uint32_t page_num)
 {
     return page_num < p->num_pages;
 }
-// 目前仅支持顺序扩充+1. 即参数page_num == p->num_pages
-void pager_add_page(Pager* p, uint32_t page_num) {
+/**
+ * @brief 添加一个空白页，pagenum要通过 get_unused_pagenum 获取。
+ *      TODO 可以考虑将 get_unused_pagenum 和这个 绑定一起。
+ * @attention 目前仅支持顺序扩充+1. 即新的空白页page_num == p->num_pages
+ */
+void pager_add_emptypage(Pager* p, uint32_t page_num) {
     assert(page_num == p->num_pages);
     // 文件扩展一个页的大小. 访问不能超越文件长度
     ftruncate(p->fd, (p->num_pages + 1) * PAGE_SIZE);
     p->num_pages += 1;
     p->pages = realloc(p->pages, sizeof(void*) * (p->num_pages));   
     printf("pager add page [%d] done\n", page_num); 
-    // 对btree做一些最基本的初始化设置：leafnode
-    btree_init(page_num, p);
+    // 对这个node空白页做一些最基本的初始化
+    btree_init_anode(page_num, p);
 }
 
 /**
- * @brief 节点获取必须通过getpage，不可以通过pager.pagers直接访问
+ * @brief 节点获取必须通过get——page，不可以通过pager.pagers直接访问
  * 
- * @param pager ：pages管理
- * @param page_num ：
+ * @warning 为了语义简洁正确， 只能获取有效的page即pagenum检测。应该在该函数之前调用has_page
  * @return void* ：一个page
  */
 void *pager_get_page(Pager* pager, uint8_t page_num)
 {
     if (page_num >= pager->num_pages) {
-        printf("Tried to fetch page number out of bounds. %d > %d\n", page_num,
+        printf("ERR: Tried to fetch page number out of bounds. %d > %d\n", page_num,
                pager->num_pages);
         return NULL;
     }

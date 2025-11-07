@@ -55,11 +55,12 @@ void init_master(DB* db)
     // type name tbl_name root_page sql  
     master->ncol = 5;
     master->cols = malloc(sizeof(char*) * master->ncol);
-    master->cols[0] = "type";
-    master->cols[1] = "name";
-    master->cols[2] = "tbl_name";
-    master->cols[3] = "root_pagenum";
-    master->cols[4] = "sql";
+    // 为了table结构一致，后续易free， cols[i] 使用堆上内存，而非字符串常量
+    master->cols[0] = strdup("type");
+    master->cols[1] = strdup("name");
+    master->cols[2] = strdup("tbl_name");
+    master->cols[3] = strdup("root_pagenum");
+    master->cols[4] = strdup("sql");
     master->tree = btree_get(0, db->pager);
     db->master = master;
     printf("init master metainfo\n");
@@ -76,7 +77,6 @@ DB* db_open(const char *file_name)
     Pager *pager = pager_open(file_name);
 
     db->pager = pager;
-    printf("(debug) pager open ok.\n");
 
     // page0 是master页
     // master 元信息内存结构。
@@ -137,7 +137,7 @@ DB* db_open(const char *file_name)
             tab->cols = NULL;
             tab->ncol = 0;
             if (start && end && end > start) {
-                char cols[128];
+                char cols[256];
                 size_t len = end - start - 1;
                 strncpy(cols, start + 1, len);
                 cols[len] = '\0';
@@ -153,7 +153,7 @@ DB* db_open(const char *file_name)
             }
             
             // print table meta
-            printf("[%ld]: %s %d | cols: ", i, tab->name, tab->tree->root_page_num);
+            printf("[%ld] | %s | %d | cols: ", i, tab->name, tab->tree->root_page_num);
             for (size_t i = 0; i < tab->ncol; i++)
             {
                 printf("%s ", tab->cols[i]);
@@ -163,10 +163,6 @@ DB* db_open(const char *file_name)
         }
         free(data);
     }
-
-    
-
-
 
     // if (pager->num_pages == 0) {
     //     // 分配page0 , 初始化根节点

@@ -162,6 +162,9 @@ static void execute_next(SqlPrepareContext* sqlctx, Instruction* ins)
     btree_cursor_advance(cursor);
     if (!cursor->end_of_table) {
         g_pc = ins->p2; // 目前， 执行的pc 和 生成的pc是一致的。
+    } else {
+        // 没有可读数据了，跳出循环
+        g_pc++;
     }
 }
 static void execute_halt(SqlPrepareContext* sqlctx, Instruction* ins)
@@ -193,6 +196,8 @@ static void execute_resultrow(SqlPrepareContext* sqlctx, Instruction* ins)
     result->data[result->nrow - 1] = malloc(sizeof(Row)); // 为新的一行分配内存
     // 拼接
     Row* row = result->data[result->nrow - 1];
+    row->data = NULL;
+    row->n = 0;
     int bdi = 0;
     for (size_t i = ins->p1; i <= ins->p2; i++)
     {
@@ -200,11 +205,11 @@ static void execute_resultrow(SqlPrepareContext* sqlctx, Instruction* ins)
         uint8_t* data = g_registers[i].value.bytes;
         int n = g_registers[i].n;
         row->n += n;
+        printf("(debug) extend %d bytes. \n", n);
         row->data = realloc(row->data, row->n);
         memcpy(row->data + row->n - n, data, n);
-        printf("(debug) add reg[%ld], [%d]bytes to row\n", i, n);
-
     }
+    printf("(debug)execute resultrow done \n");
 }
 static void free_row(Row* row)
 {
@@ -222,8 +227,9 @@ static void free_resultbuf(ResultBuffer* resbuf)
 
 static void execute_column(SqlPrepareContext* sqlctx, Instruction* ins)
 {
-    printf("execute column\n");
+    printf("execute column. cursor %d\n", ins->p1);
     Cursor* cursor = g_vdb_cursors[ins->p1];
+    assert(cursor);
     int coli = ins->p2;
     // 读取coli的内容 到 ins.p2寄存器
     // 目前都是直接全部读出来忽略表结构
@@ -252,6 +258,7 @@ static void execute_openread(SqlPrepareContext* sqlctx, Instruction* ins)
     Cursor* cursor = btree_cursor_start(btree_get(root_pagenum, sqlctx->db->pager));
     // 需要与cursor编号绑定。
     g_vdb_cursors[ins->p1] = cursor;
+    printf("(debug) open the cursor [%d]\n", ins->p1);
 }
 
 // 为表访问创建cursor
@@ -333,12 +340,13 @@ static void execute_insert(SqlPrepareContext* sqlctx, Instruction* ins)
     int rowid = g_registers[ins->p3].value.i32;
     //
     btree_insert(cursor->btree, rowid, bytes, bytesize);
+    printf("Execute insert done");
 }
 static void execute_createbtree(SqlPrepareContext* sqlctx, Instruction* ins)
 {
     // 创建一个空树，添加到pager
     int root_pagenum = pager_get_unused_pagenum(sqlctx->db->pager);
-    pager_add_page(sqlctx->db->pager, root_pagenum);
+    pager_add_emptypage(sqlctx->db->pager, root_pagenum);
     g_registers[ins->p1].value.i32 = root_pagenum;
     g_registers[ins->p1].flags = REG_I32;
     g_registers[ins->p1].n = 4;
@@ -366,6 +374,8 @@ void vdbe_run(SqlPrepareContext *sqlctx)
     print_inslist(inslist);
     printf("Begin execute instructions:\n");   
     // 按理来说，halt时候就可以直接return了 
+    g_halt_flag = false;
+    g_pc = 0;
     for (; g_pc < inslist->nints && !g_halt_flag; )
     {
         ins = sqlctx->inslist->ints[g_pc];
@@ -394,11 +404,10 @@ void vdbe_run(SqlPrepareContext *sqlctx)
             break;
         case Next:
             execute_next(sqlctx, ins);
-            g_pc++;
             break;
         case Halt:
+            // halt 作为最后一个指令，不进行gpc++
             execute_halt(sqlctx, ins);
-            g_pc++;
             break;
         case Transaction:
             g_pc++;

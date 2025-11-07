@@ -26,7 +26,7 @@ void pager_free(Pager * pager);
 
 void *pager_get_page(Pager* pager, uint8_t page_num);
 void pager_flush(Pager *pager, uint8_t page_num);
-void pager_add_page(Pager* p, uint32_t page_num);
+void pager_add_emptypage(Pager* p, uint32_t page_num);
 
 /* page */
 void pager_free_page(Pager* p, uint32_t page_num);
