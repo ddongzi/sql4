@@ -31,17 +31,16 @@ Instruction* bytecode_createbtree()
     return ins;
 }
 
-// TODO 还是需要把把master的一些表的元信息 缓存到内存结构中， 这个时候不经过字节码 直接取btree
 /**
  * p1: 游标编号
- * p2: master表的rootpagenum
+ * p2: 表的rootpagenum
  * p3: 0 not used
  * p4: 0 not used
  */
-Instruction* bytecode_openwrite()
+Instruction* bytecode_openwrite(int root_page_num)
 {
     Instruction* ins = vdbe_new_ins(OpenWrite, next_cursor_num++,
-         g_db->master->tree->root_page_num,
+         root_page_num,
          0, (union P4_t){0});
     return ins;
 }
@@ -179,7 +178,7 @@ Instruction*  bytecode_resultrow(int p1, int p2)
     
     return ins;   
 }
- void bytecode_select(struct SelectStmt* selectst, SqlPrepareContext* sqlctx)
+ void bytecode_select_stmt(struct SelectStmt* selectst, SqlPrepareContext* sqlctx)
 {
     uint32_t nins = 0;
     
@@ -239,7 +238,7 @@ Instruction*  bytecode_resultrow(int p1, int p2)
 
 
 
-void bytecode_create_table(struct CreateStmt* creatst,  SqlPrepareContext* sqlctx)
+void bytecode_create_table_stmt(struct CreateStmt* creatst,  SqlPrepareContext* sqlctx)
 {
     // Init
     // CreateBtree 得到一个新的page
@@ -262,7 +261,7 @@ void bytecode_create_table(struct CreateStmt* creatst,  SqlPrepareContext* sqlct
     Instruction* createbtree_ins = bytecode_createbtree();
     vdbe_inslist_add(inslist, createbtree_ins);
 
-    Instruction* openwt_ins = bytecode_openwrite();
+    Instruction* openwt_ins = bytecode_openwrite(g_db->master->tree->root_page_num);
     vdbe_inslist_add(inslist, openwt_ins);
     
     Instruction* newrowid_ins = bytecode_newrowid(openwt_ins->p1);
@@ -291,8 +290,61 @@ void bytecode_create_table(struct CreateStmt* creatst,  SqlPrepareContext* sqlct
     
     ins = bytecode_halt();
     vdbe_inslist_add(inslist, ins);
+    // TODO 需要一个时机，master内存更新这个信息。
+    // TODO 我们需要明确 page更新 和 刷盘的一些时机。
 }
+void bytecode_insert_stmt(struct InsertStmt* insertst,  SqlPrepareContext* sqlctx)
+{
+    // 类似create table
+    // sqlite> explain insert into users (name,age) values ('xiaoliu', 89);
+    // addr  opcode         p1    p2    p3    p4             p5  comment
+    // ----  -------------  ----  ----  ----  -------------  --  -------------
+    // 0     Init           0     8     0                    0
+    // 1     OpenWrite      0     4     0     2              0
+    // 2     String8        0     2     0     xiaoliu        0
+    // 3     Integer        89    3     0                    0
+    // 4     NewRowid       0     1     0                    0
+    // 5     MakeRecord     2     2     4                    0
+    // 6     Insert         0     4     1     users          57
+    // 7     Halt           0     0     0                    0
+    // 8     Transaction    0     1     6     0              1
+    // 9     Goto           0     1     0                    0
+    // sqlite>
+    // TODO 现在并不涉及类型，存储都是以严格的<len><bytes>存储，至于格式解析可以考虑在解析时候设置。
+    // TODO 因此现在均先采用 string表示这个语意。
+    InstructionList* inslist = sqlctx->inslist;
+    Instruction* ins;
+    ins = bytecode_init();
+    vdbe_inslist_add(inslist, ins);
 
+    printf("(debug) insert find tabnme %s", insertst->table_ref->name);
+    Table* tabmeta = db_get_table(g_db, insertst->table_ref->name);
+    assert(tabmeta);
+
+    Instruction* owrite_ins = bytecode_openwrite(tabmeta->tree->root_page_num);
+    vdbe_inslist_add(inslist, owrite_ins);
+
+    int reg_start = nex_reg_num;
+    for (size_t i = 0; i < insertst->val_list->nexpr; i++)
+    {
+        ins = bytecode_string(insertst->val_list->items[i]->name);
+        vdbe_inslist_add(inslist, ins);
+    }
+    int reg_end = nex_reg_num - 1;
+
+    Instruction* newrid_ins = bytecode_newrowid(owrite_ins->p1);
+    vdbe_inslist_add(inslist, newrid_ins);
+
+    Instruction* mkrcd_ins = bytecode_mkrecord(reg_start, reg_end);
+    vdbe_inslist_add(inslist, mkrcd_ins);
+
+    ins = bytecode_insert(owrite_ins->p1, mkrcd_ins->p3, newrid_ins->p2);
+    vdbe_inslist_add(inslist, ins);
+    
+    ins = bytecode_halt();
+    vdbe_inslist_add(inslist, ins);
+
+}
 // 将root ast翻译成指令， 放在inslist，
 void bytecode_generate(SqlPrepareContext* sqlctx)
 {
@@ -307,10 +359,13 @@ void bytecode_generate(SqlPrepareContext* sqlctx)
         switch (stmt->type)
         {
         case STMT_SELECT:
-            bytecode_select((struct SelectStmt* )(stmt->st), sqlctx);
+            bytecode_select_stmt((struct SelectStmt* )(stmt->st), sqlctx);
             break;
         case STMT_CREATE:
-            bytecode_create_table((struct CreateStmt*)(stmt->st), sqlctx);
+            bytecode_create_table_stmt((struct CreateStmt*)(stmt->st), sqlctx);
+            break;
+        case STMT_INSERT:
+            bytecode_insert_stmt((struct InsertStmt*)(stmt->st), sqlctx);
             break;
         default:
             break;

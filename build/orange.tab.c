@@ -116,19 +116,23 @@ enum yysymbol_kind_t
   YYSYMBOL_FROM = 7,                       /* FROM  */
   YYSYMBOL_CREATE = 8,                     /* CREATE  */
   YYSYMBOL_TABLE = 9,                      /* TABLE  */
-  YYSYMBOL_10_ = 10,                       /* ';'  */
-  YYSYMBOL_11_ = 11,                       /* ','  */
-  YYSYMBOL_12_ = 12,                       /* '('  */
-  YYSYMBOL_13_ = 13,                       /* ')'  */
-  YYSYMBOL_YYACCEPT = 14,                  /* $accept  */
-  YYSYMBOL_input = 15,                     /* input  */
-  YYSYMBOL_stmt_list = 16,                 /* stmt_list  */
-  YYSYMBOL_stmt = 17,                      /* stmt  */
-  YYSYMBOL_select_stmt = 18,               /* select_stmt  */
-  YYSYMBOL_table_ref = 19,                 /* table_ref  */
-  YYSYMBOL_expr = 20,                      /* expr  */
-  YYSYMBOL_expr_list = 21,                 /* expr_list  */
-  YYSYMBOL_create_table_stmt = 22          /* create_table_stmt  */
+  YYSYMBOL_INSERT = 10,                    /* INSERT  */
+  YYSYMBOL_INTO = 11,                      /* INTO  */
+  YYSYMBOL_VALUES = 12,                    /* VALUES  */
+  YYSYMBOL_13_ = 13,                       /* ';'  */
+  YYSYMBOL_14_ = 14,                       /* ','  */
+  YYSYMBOL_15_ = 15,                       /* '('  */
+  YYSYMBOL_16_ = 16,                       /* ')'  */
+  YYSYMBOL_YYACCEPT = 17,                  /* $accept  */
+  YYSYMBOL_input = 18,                     /* input  */
+  YYSYMBOL_stmt_list = 19,                 /* stmt_list  */
+  YYSYMBOL_stmt = 20,                      /* stmt  */
+  YYSYMBOL_select_stmt = 21,               /* select_stmt  */
+  YYSYMBOL_table_ref = 22,                 /* table_ref  */
+  YYSYMBOL_expr = 23,                      /* expr  */
+  YYSYMBOL_expr_list = 24,                 /* expr_list  */
+  YYSYMBOL_create_table_stmt = 25,         /* create_table_stmt  */
+  YYSYMBOL_insert_stmt = 26                /* insert_stmt  */
 };
 typedef enum yysymbol_kind_t yysymbol_kind_t;
 
@@ -454,21 +458,21 @@ union yyalloc
 #endif /* !YYCOPY_NEEDED */
 
 /* YYFINAL -- State number of the termination state.  */
-#define YYFINAL  12
+#define YYFINAL  15
 /* YYLAST -- Last index in YYTABLE.  */
-#define YYLAST   18
+#define YYLAST   35
 
 /* YYNTOKENS -- Number of terminals.  */
-#define YYNTOKENS  14
+#define YYNTOKENS  17
 /* YYNNTS -- Number of nonterminals.  */
-#define YYNNTS  9
+#define YYNNTS  10
 /* YYNRULES -- Number of rules.  */
-#define YYNRULES  13
+#define YYNRULES  15
 /* YYNSTATES -- Number of states.  */
-#define YYNSTATES  25
+#define YYNSTATES  37
 
 /* YYMAXUTOK -- Last valid token kind.  */
-#define YYMAXUTOK   264
+#define YYMAXUTOK   267
 
 
 /* YYTRANSLATE(TOKEN-NUM) -- Symbol number corresponding to TOKEN-NUM
@@ -486,8 +490,8 @@ static const yytype_int8 yytranslate[] =
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-      12,    13,     2,     2,    11,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,    10,
+      15,    16,     2,     2,    14,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,    13,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
@@ -508,15 +512,15 @@ static const yytype_int8 yytranslate[] =
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     1,     2,     3,     4,
-       5,     6,     7,     8,     9
+       5,     6,     7,     8,     9,    10,    11,    12
 };
 
 #if YYDEBUG
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int8 yyrline[] =
 {
-       0,    41,    41,    42,    44,    45,    48,    49,    51,    55,
-      57,    60,    61,    64
+       0,    43,    43,    44,    46,    47,    50,    51,    52,    54,
+      58,    60,    63,    64,    67,    71
 };
 #endif
 
@@ -533,9 +537,10 @@ static const char *yysymbol_name (yysymbol_kind_t yysymbol) YY_ATTRIBUTE_UNUSED;
 static const char *const yytname[] =
 {
   "\"end of file\"", "error", "\"invalid token\"", "EOL", "NAME",
-  "INTNUM", "SELECT", "FROM", "CREATE", "TABLE", "';'", "','", "'('",
-  "')'", "$accept", "input", "stmt_list", "stmt", "select_stmt",
-  "table_ref", "expr", "expr_list", "create_table_stmt", YY_NULLPTR
+  "INTNUM", "SELECT", "FROM", "CREATE", "TABLE", "INSERT", "INTO",
+  "VALUES", "';'", "','", "'('", "')'", "$accept", "input", "stmt_list",
+  "stmt", "select_stmt", "table_ref", "expr", "expr_list",
+  "create_table_stmt", "insert_stmt", YY_NULLPTR
 };
 
 static const char *
@@ -545,7 +550,7 @@ yysymbol_name (yysymbol_kind_t yysymbol)
 }
 #endif
 
-#define YYPACT_NINF (-8)
+#define YYPACT_NINF (-25)
 
 #define yypact_value_is_default(Yyn) \
   ((Yyn) == YYPACT_NINF)
@@ -559,9 +564,10 @@ yysymbol_name (yysymbol_kind_t yysymbol)
    STATE-NUM.  */
 static const yytype_int8 yypact[] =
 {
-      -5,    -2,    -3,     8,    -5,    -8,    -8,    -8,    -8,    -8,
-      -7,     5,    -8,    -8,     5,    -2,    -8,    -1,     0,    -8,
-      -2,    -8,    -6,     2,    -8
+      -2,     3,     9,     8,    12,    -2,   -25,   -25,   -25,   -25,
+     -25,   -25,    -4,    16,    16,   -25,   -25,    16,     3,   -25,
+       6,     7,    10,   -25,     3,     3,   -25,    -3,     0,    11,
+      13,   -25,    14,     3,     1,    15,   -25
 };
 
 /* YYDEFACT[STATE-NUM] -- Default reduction number in state STATE-NUM.
@@ -569,21 +575,22 @@ static const yytype_int8 yypact[] =
    means the default is an error.  */
 static const yytype_int8 yydefact[] =
 {
-       3,     0,     0,     0,     2,     4,     6,     7,    10,    11,
-       0,     0,     1,     5,     0,     0,     9,     0,     0,    12,
-       0,     8,     0,     0,    13
+       3,     0,     0,     0,     0,     2,     4,     6,     7,     8,
+      11,    12,     0,     0,     0,     1,     5,     0,     0,    10,
+       0,     0,     0,    13,     0,     0,     9,     0,     0,     0,
+       0,    14,     0,     0,     0,     0,    15
 };
 
 /* YYPGOTO[NTERM-NUM].  */
 static const yytype_int8 yypgoto[] =
 {
-      -8,    -8,    -8,     9,    -8,     1,     3,    -4,    -8
+     -25,   -25,   -25,    21,   -25,   -12,    17,   -24,   -25,   -25
 };
 
 /* YYDEFGOTO[NTERM-NUM].  */
 static const yytype_int8 yydefgoto[] =
 {
-       0,     3,     4,     5,     6,    17,     9,    10,     7
+       0,     4,     5,     6,     7,    20,    11,    12,     8,     9
 };
 
 /* YYTABLE[YYPACT[STATE-NUM]] -- What to do in state STATE-NUM.  If
@@ -591,37 +598,42 @@ static const yytype_int8 yydefgoto[] =
    number is the opposite.  If YYTABLE_NINF, syntax error.  */
 static const yytype_int8 yytable[] =
 {
-      14,     1,     8,     2,    15,    15,    11,    23,    12,    16,
-      21,    20,    24,    13,     0,    18,    22,     0,    19
+      27,    28,    21,    17,     1,    22,     2,    10,     3,    34,
+      18,    18,    15,    29,    18,    18,    30,    35,    13,    14,
+      19,    24,    25,    26,    31,    32,    16,     0,    36,    33,
+       0,     0,     0,     0,     0,    23
 };
 
 static const yytype_int8 yycheck[] =
 {
-       7,     6,     4,     8,    11,    11,     9,    13,     0,     4,
-      10,    12,    10,     4,    -1,    14,    20,    -1,    15
+      24,    25,    14,     7,     6,    17,     8,     4,    10,    33,
+      14,    14,     0,    16,    14,    14,    16,    16,     9,    11,
+       4,    15,    15,    13,    13,    12,     5,    -1,    13,    15,
+      -1,    -1,    -1,    -1,    -1,    18
 };
 
 /* YYSTOS[STATE-NUM] -- The symbol kind of the accessing symbol of
    state STATE-NUM.  */
 static const yytype_int8 yystos[] =
 {
-       0,     6,     8,    15,    16,    17,    18,    22,     4,    20,
-      21,     9,     0,    17,     7,    11,     4,    19,    19,    20,
-      12,    10,    21,    13,    10
+       0,     6,     8,    10,    18,    19,    20,    21,    25,    26,
+       4,    23,    24,     9,    11,     0,    20,     7,    14,     4,
+      22,    22,    22,    23,    15,    15,    13,    24,    24,    16,
+      16,    13,    12,    15,    24,    16,    13
 };
 
 /* YYR1[RULE-NUM] -- Symbol kind of the left-hand side of rule RULE-NUM.  */
 static const yytype_int8 yyr1[] =
 {
-       0,    14,    15,    15,    16,    16,    17,    17,    18,    19,
-      20,    21,    21,    22
+       0,    17,    18,    18,    19,    19,    20,    20,    20,    21,
+      22,    23,    24,    24,    25,    26
 };
 
 /* YYR2[RULE-NUM] -- Number of symbols on the right-hand side of rule RULE-NUM.  */
 static const yytype_int8 yyr2[] =
 {
-       0,     2,     1,     0,     1,     2,     1,     1,     5,     1,
-       1,     1,     3,     7
+       0,     2,     1,     0,     1,     2,     1,     1,     1,     5,
+       1,     1,     1,     3,     7,    11
 };
 
 
@@ -1085,83 +1097,97 @@ yyreduce:
   switch (yyn)
     {
   case 2: /* input: stmt_list  */
-#line 41 "orange.y"
+#line 43 "orange.y"
                   {  }
-#line 1091 "build/orange.tab.c"
-    break;
-
-  case 3: /* input: %empty  */
-#line 42 "orange.y"
-           {}
-#line 1097 "build/orange.tab.c"
-    break;
-
-  case 4: /* stmt_list: stmt  */
-#line 44 "orange.y"
-                  { printf("(debug) here1!\n"); stmtListAdd((yyvsp[0].stmtVal));  (yyval.stmtListVal) = root;}
 #line 1103 "build/orange.tab.c"
     break;
 
-  case 5: /* stmt_list: stmt_list stmt  */
-#line 45 "orange.y"
-                          { printf("(debug) here2!\n"); stmtListAdd((yyvsp[0].stmtVal)); (yyval.stmtListVal) = (yyvsp[-1].stmtListVal); }
+  case 3: /* input: %empty  */
+#line 44 "orange.y"
+           {}
 #line 1109 "build/orange.tab.c"
     break;
 
-  case 6: /* stmt: select_stmt  */
-#line 48 "orange.y"
-                  { (yyval.stmtVal) = newStmt(STMT_SELECT, (yyvsp[0].selectStmtVal));}
+  case 4: /* stmt_list: stmt  */
+#line 46 "orange.y"
+                  { printf("(debug) here1!\n"); stmtListAdd((yyvsp[0].stmtVal));  (yyval.stmtListVal) = root;}
 #line 1115 "build/orange.tab.c"
     break;
 
-  case 7: /* stmt: create_table_stmt  */
-#line 49 "orange.y"
-                            { (yyval.stmtVal) = newStmt(STMT_CREATE, (yyvsp[0].createStmtVal));}
+  case 5: /* stmt_list: stmt_list stmt  */
+#line 47 "orange.y"
+                          { printf("(debug) here2!\n"); stmtListAdd((yyvsp[0].stmtVal)); (yyval.stmtListVal) = (yyvsp[-1].stmtListVal); }
 #line 1121 "build/orange.tab.c"
     break;
 
-  case 8: /* select_stmt: SELECT expr_list FROM table_ref ';'  */
+  case 6: /* stmt: select_stmt  */
+#line 50 "orange.y"
+                  { (yyval.stmtVal) = newStmt(STMT_SELECT, (yyvsp[0].selectStmtVal));}
+#line 1127 "build/orange.tab.c"
+    break;
+
+  case 7: /* stmt: create_table_stmt  */
 #line 51 "orange.y"
+                            { (yyval.stmtVal) = newStmt(STMT_CREATE, (yyvsp[0].createStmtVal));}
+#line 1133 "build/orange.tab.c"
+    break;
+
+  case 8: /* stmt: insert_stmt  */
+#line 52 "orange.y"
+                      { (yyval.stmtVal) = newStmt(STMT_INSERT, (yyvsp[0].insertStmtVal)); }
+#line 1139 "build/orange.tab.c"
+    break;
+
+  case 9: /* select_stmt: SELECT expr_list FROM table_ref ';'  */
+#line 54 "orange.y"
                                                  {
                 (yyval.selectStmtVal) = newSelectStmt((yyvsp[-3].exprListVal), (yyvsp[-1].tabRefVal));
         }
-#line 1129 "build/orange.tab.c"
-    break;
-
-  case 9: /* table_ref: NAME  */
-#line 55 "orange.y"
-                { (yyval.tabRefVal) = newTableRef((yyvsp[0].strval)); }
-#line 1135 "build/orange.tab.c"
-    break;
-
-  case 10: /* expr: NAME  */
-#line 57 "orange.y"
-           { (yyval.exprVal) = newExpr((yyvsp[0].strval)); }
-#line 1141 "build/orange.tab.c"
-    break;
-
-  case 11: /* expr_list: expr  */
-#line 60 "orange.y"
-                { (yyval.exprListVal) = newExprList((yyvsp[0].exprVal)); }
 #line 1147 "build/orange.tab.c"
     break;
 
-  case 12: /* expr_list: expr_list ',' expr  */
-#line 61 "orange.y"
-                               { exprListAdd((yyvsp[-2].exprListVal), (yyvsp[0].exprVal)); (yyval.exprListVal) = (yyvsp[-2].exprListVal); }
+  case 10: /* table_ref: NAME  */
+#line 58 "orange.y"
+                { (yyval.tabRefVal) = newTableRef((yyvsp[0].strval)); }
 #line 1153 "build/orange.tab.c"
     break;
 
-  case 13: /* create_table_stmt: CREATE TABLE table_ref '(' expr_list ')' ';'  */
+  case 11: /* expr: NAME  */
+#line 60 "orange.y"
+           { (yyval.exprVal) = newExpr((yyvsp[0].strval)); }
+#line 1159 "build/orange.tab.c"
+    break;
+
+  case 12: /* expr_list: expr  */
+#line 63 "orange.y"
+                { (yyval.exprListVal) = newExprList((yyvsp[0].exprVal)); }
+#line 1165 "build/orange.tab.c"
+    break;
+
+  case 13: /* expr_list: expr_list ',' expr  */
 #line 64 "orange.y"
+                               { exprListAdd((yyvsp[-2].exprListVal), (yyvsp[0].exprVal)); (yyval.exprListVal) = (yyvsp[-2].exprListVal); }
+#line 1171 "build/orange.tab.c"
+    break;
+
+  case 14: /* create_table_stmt: CREATE TABLE table_ref '(' expr_list ')' ';'  */
+#line 67 "orange.y"
                                                                 {
                 (yyval.createStmtVal) = newCreateStmt((yyvsp[-2].exprListVal), (yyvsp[-4].tabRefVal));
         }
-#line 1161 "build/orange.tab.c"
+#line 1179 "build/orange.tab.c"
+    break;
+
+  case 15: /* insert_stmt: INSERT INTO table_ref '(' expr_list ')' VALUES '(' expr_list ')' ';'  */
+#line 71 "orange.y"
+                                                                                  {
+                (yyval.insertStmtVal) = newInsertStmt((yyvsp[-8].tabRefVal), (yyvsp[-6].exprListVal), (yyvsp[-2].exprListVal));
+        }
+#line 1187 "build/orange.tab.c"
     break;
 
 
-#line 1165 "build/orange.tab.c"
+#line 1191 "build/orange.tab.c"
 
       default: break;
     }
@@ -1354,7 +1380,7 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 69 "orange.y"
+#line 75 "orange.y"
 
 
 

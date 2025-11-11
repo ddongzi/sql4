@@ -50,6 +50,14 @@ void freeSelectStmt(struct SelectStmt* selectstmt)
     freeTableRef(selectstmt->table_ref);
     free(selectstmt);
 }
+void freeInsertStmt(struct InsertStmt* insertst)
+{
+       freeExprList(insertst->col_list);
+    freeTableRef(insertst->table_ref);
+       freeExprList(insertst->val_list);
+
+    free(insertst); 
+}
 struct Expr* newExpr(char* name)
 {
     struct Expr* expr = malloc(sizeof(struct Expr));
@@ -94,6 +102,15 @@ void freeCreateStmt(struct CreateStmt* createst)
     freeTableRef(createst->table_ref);
     free(createst);
 }
+struct InsertStmt* newInsertStmt(struct TableRef* tabref, struct ExprList* col_list, struct ExprList* val_list)
+{
+    struct InsertStmt* insertst = malloc(sizeof(struct InsertStmt));
+    insertst->col_list = col_list;
+    insertst->table_ref = tabref;
+    insertst->val_list = val_list;
+    return insertst;
+}
+
 
 void exprListAdd(struct ExprList* exprs, struct Expr* item)
 {
@@ -150,6 +167,15 @@ static void printCreateStmt(struct CreateStmt* createst, int level)
     printExprList(createst->col_list, level+1);
     printTableRef(createst->table_ref, level + 1);
 }
+static void printInsertStmt(struct InsertStmt* insertst, int level)
+{
+    printIdent(level);
+    printf("└─ InsertStmt: \n");
+    printExprList(insertst->col_list, level+1);
+    printTableRef(insertst->table_ref, level + 1);
+    printExprList(insertst->val_list, level+1);
+}
+
 static void printStmt(struct Stmt * st, int level)
 {
     switch (st->type)
@@ -159,6 +185,9 @@ static void printStmt(struct Stmt * st, int level)
         break;
     case STMT_CREATE:
         printCreateStmt((struct CreateStmt*)(st->st), level);
+        break;
+    case STMT_INSERT:
+        printInsertStmt((struct InsertStmt*)(st->st), level);
         break;
     default:
         break;
@@ -189,6 +218,9 @@ void orange_destroy(SqlPrepareContext* sqlctx)
             break;
         case STMT_SELECT:
             freeSelectStmt((struct SelectStmt*)st->st);
+            break;
+        case STMT_INSERT:
+            freeInsertStmt((struct InsertStmt*)st->st);
             break;
         default:
             break;

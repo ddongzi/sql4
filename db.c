@@ -93,6 +93,7 @@ DB* db_open(const char *file_name)
         uint8_t** data = NULL;
         btree_select(tree, &ntabs, &data);
         db->tabs = malloc(sizeof(Table*) *ntabs);
+        db->ntab = ntabs;
         printf("Db open, master load %ld tabs\n", ntabs);
         printf("Table master:\n[id] | name | root_pagenum | cols\n");
         for (size_t i = 0; i < ntabs; i++)

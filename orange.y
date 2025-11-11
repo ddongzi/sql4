@@ -17,6 +17,7 @@ extern struct StmtList* root;
                 int intval;
         struct SelectStmt* selectStmtVal;
         struct CreateStmt* createStmtVal;
+        struct InsertStmt* insertStmtVal;
         struct Expr* exprVal;
         struct TableRef* tabRefVal;
         struct ExprList* exprListVal;
@@ -26,11 +27,12 @@ extern struct StmtList* root;
 %token EOL
 %token <strval> NAME
 %token <intval> INTNUM 
-%token SELECT FROM CREATE TABLE
+%token SELECT FROM CREATE TABLE INSERT INTO VALUES
 %type <exprVal> expr
 %type <exprListVal> expr_list
 %type <stmtVal> stmt
 %type <selectStmtVal> select_stmt
+%type <insertStmtVal> insert_stmt
 %type <createStmtVal> create_table_stmt
 %type <stmtListVal> stmt_list
 %type <tabRefVal> table_ref
@@ -47,6 +49,7 @@ stmt_list: stmt   { printf("(debug) here1!\n"); stmtListAdd($1);  $$ = root;}
 
 stmt: select_stmt { $$ = newStmt(STMT_SELECT, $1);}
         | create_table_stmt { $$ = newStmt(STMT_CREATE, $1);}
+        | insert_stmt { $$ = newStmt(STMT_INSERT, $1); };
         ;
 select_stmt: SELECT expr_list FROM table_ref ';' {
                 $$ = newSelectStmt($2, $4);
@@ -65,7 +68,10 @@ create_table_stmt: CREATE TABLE table_ref '(' expr_list ')' ';' {
                 $$ = newCreateStmt($5, $3);
         }
         ;
-
+insert_stmt: INSERT INTO table_ref '(' expr_list ')' VALUES '(' expr_list ')' ';' {
+                $$ = newInsertStmt($3, $5, $9);
+        }
+        ;
 %%
 
 

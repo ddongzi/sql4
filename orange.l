@@ -12,6 +12,10 @@ void yyerror(char* s, ...);
 SELECT {  return SELECT;}
 CREATE { return CREATE; }
 TABLE { return TABLE; }
+INSERT { return INSERT; }
+INTO { return INTO; }
+VALUES { return VALUES; }
+
 "*" |
 "," |
 "(" |

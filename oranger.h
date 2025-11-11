@@ -22,9 +22,15 @@ struct CreateStmt {
     struct ExprList* col_list;
     struct TableRef* table_ref;
 };
+struct InsertStmt {
+    struct ExprList* col_list;
+    struct TableRef* table_ref;
+    struct ExprList* val_list;
+};
 enum StmtType {
     STMT_SELECT,
     STMT_CREATE,
+    STMT_INSERT,
 };
 struct Stmt {
     enum StmtType type;
@@ -48,6 +54,8 @@ struct ExprList* newExprList(struct Expr* item); // 一个个添加，刚开始�
 void exprListAdd(struct ExprList* exprs, struct Expr* item); // 一个个添加，刚开始是一个
 
 struct CreateStmt* newCreateStmt(struct ExprList* col_list,struct TableRef* );
+
+struct InsertStmt* newInsertStmt(struct TableRef* , struct ExprList* col_list, struct ExprList* val_list);
 
 void orange_parse(SqlPrepareContext* sqlctx);
 void yyerror(char* s, ...);

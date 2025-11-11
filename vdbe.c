@@ -184,7 +184,6 @@ static void execute_halt(SqlPrepareContext* sqlctx, Instruction* ins)
     memset(g_registers, 0, sizeof(Register) * REGISTER_SIZE);
 }
 
-
 // 把col返回的内容放在buffer
 static void execute_resultrow(SqlPrepareContext* sqlctx, Instruction* ins)
 {
@@ -340,6 +339,7 @@ static void execute_insert(SqlPrepareContext* sqlctx, Instruction* ins)
     int rowid = g_registers[ins->p3].value.i32;
     //
     btree_insert(cursor->btree, rowid, bytes, bytesize);
+
     printf("Execute insert done");
 }
 static void execute_createbtree(SqlPrepareContext* sqlctx, Instruction* ins)

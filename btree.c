@@ -1272,6 +1272,8 @@ SQL4_CODE btree_insert(BTree* tree, uint32_t key, uint8_t* data, size_t datalen)
     }
 
     leaf_node_insert(cursor, key, data, datalen);
+    // flush
+    pager_flush(cursor->btree->pager, cursor->page_num);
     free(cursor);
     return BTREE_INSERT_SUCCESS;
 }
