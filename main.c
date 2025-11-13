@@ -21,6 +21,7 @@
 #include "oranger.h"
 #include "bytecode.h"
 #include "db.h"
+#include "sql4code.h"
 
 uint16_t sql4_errno = 0; // 初始hua
 
@@ -121,16 +122,11 @@ void do_meta_command(char* input, DB* db)
     }
 }
 
-
-
-
-/**
- *
-sqlite> .exit
- * @param argc
- * @param argv
- * @return
- */
+// 异常退出时候， 打印错误
+void print_errcode()
+{
+    printf("Exit err: [%d]", sql4_errno);
+}
 
 int main(int argc, char *argv[])
 {

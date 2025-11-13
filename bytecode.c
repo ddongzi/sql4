@@ -117,6 +117,18 @@ Instruction* bytecode_string(char* s)
     return ins;
 }
 /**
+ * P1: 0 not used
+ * P2: 寄存器编号
+ * P3: 0 not used
+ * P4: int 
+ */
+Instruction* bytecode_integer(int i)
+{
+    union P4_t p4 = {.i32 = i};
+    Instruction* ins = vdbe_new_ins(String, 0, nex_reg_num++, 0, p4);
+    return ins;
+}
+/**
  * p1: src register num
  * p2: dest register num
  * p3: 0 not used
@@ -204,15 +216,7 @@ Instruction*  bytecode_resultrow(int p1, int p2)
     {
         int colk = 0;
         struct Expr* expr = selectst->col_list->items[i];
-        // 查找列名对应元信息的列id
-        for (size_t j = 0; j < tabmeta->ncol; j++)
-        {
-            if (strcmp(expr->name, tabmeta->cols[j]) == 0) {
-                colk = j;
-                break;
-            }
-        }
-        
+        colk = table_get_column_index(tabmeta, expr->sval);
         Instruction* col_ins = bytecode_column(openread_ins->p1, colk + 1);
         vdbe_inslist_add(inslist, col_ins);
         if (col_ins->p3 < col_reg1) col_reg1 = col_ins->p3;
@@ -327,7 +331,13 @@ void bytecode_insert_stmt(struct InsertStmt* insertst,  SqlPrepareContext* sqlct
     int reg_start = nex_reg_num;
     for (size_t i = 0; i < insertst->val_list->nexpr; i++)
     {
-        ins = bytecode_string(insertst->val_list->items[i]->name);
+        struct Expr* expr = insertst->val_list[i].items[i];
+        if (expr->type == EXPR_INT) {
+            ins = bytecode_integer(expr->ival);
+        }
+        if (expr->type == EXPR_STRING) {
+            ins = bytecode_string(expr->sval);
+        }
         vdbe_inslist_add(inslist, ins);
     }
     int reg_end = nex_reg_num - 1;

@@ -124,6 +124,9 @@ void print_inslist(InstructionList* inslist)
             case String:
                 printf("%10s %6d %6d %6d %s\n", "String", ins->p1, ins->p2, ins->p3, ins->p4.s);
                 break;
+            case Integer:
+                printf("%10s %6d %6d %6d %d\n", "Integer", ins->p1, ins->p2, ins->p3, ins->p4.s);
+                break;
             case NewRowid:
                 printf("%10s %6d %6d %6d %d\n", "NewRowid", ins->p1, ins->p2, ins->p3, ins->p4.i32);
                 break;
@@ -277,9 +280,19 @@ static void execute_string(SqlPrepareContext* sqlctx, Instruction* ins)
     g_registers[ins->p2].flags = REG_STR;
     g_registers[ins->p2].value.s = strdup(ins->p4.s);
 }
+static void execute_integer(SqlPrepareContext* sqlctx, Instruction* ins)
+{
+    printf("Execute integer ins.\n");
+    g_registers[ins->p2].n = 4;
+    g_registers[ins->p2].flags = REG_I32;
+    g_registers[ins->p2].value.i32 = ins->p4.i32;
+}
 // 组装序列化bytes，
 static void execute_makerecord(SqlPrepareContext* sqlctx, Instruction* ins)
 {
+    // TODO 为了不同的len field长度, 需要type表示，  expr type -> reg type -> table col type
+    // TODO 需要考虑CELL_DATA_SIZE
+    // NOW 2字节的length field 够用的。 不改了
     // 格式: <len1><data1><len2><data2>...
     size_t bytesize = 0;
     for (size_t i = ins->p1; i <= ins->p2; i++) {
@@ -441,6 +454,10 @@ void vdbe_run(SqlPrepareContext *sqlctx)
             break;
         case Copy:
             execute_copy(sqlctx, ins);
+            g_pc++;
+            break;
+        case Integer:
+            execute_integer(sqlctx, ins);
             g_pc++;
             break;
         default:

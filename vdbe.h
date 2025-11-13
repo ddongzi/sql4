@@ -36,6 +36,7 @@ enum OPCode{
     Next,
     Halt,
     String,
+    Integer,
     Copy,
     MakeRecord,
     Transaction,

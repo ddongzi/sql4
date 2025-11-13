@@ -26,8 +26,9 @@ void free_table(Table* table)
 {
     for (size_t i = 0; i < table->ncol; i++)
     {
-        free(table->cols[i]);
+        free(table->columns[i].name);
     }
+    free(table->columns);
     free(table);
 }
 
@@ -51,18 +52,32 @@ void db_close(DB* db)
 // 初始化db的table master结构
 void init_master(DB* db)
 {
-    Table* master = malloc(sizeof(Table));
+    Table* master = &db->master;
     // type name tbl_name root_page sql  
     master->ncol = 5;
-    master->cols = malloc(sizeof(char*) * master->ncol);
+    master->columns = malloc(sizeof(Column) * master->ncol);
     // 为了table结构一致，后续易free， cols[i] 使用堆上内存，而非字符串常量
-    master->cols[0] = strdup("type");
-    master->cols[1] = strdup("name");
-    master->cols[2] = strdup("tbl_name");
-    master->cols[3] = strdup("root_pagenum");
-    master->cols[4] = strdup("sql");
+    master->columns[0].index = 0;
+    master->columns[0].type = COL_STRING;
+    master->columns[0].name = strdup("type");
+
+    master->columns[1].index = 1;
+    master->columns[1].type = COL_STRING;
+    master->columns[1].name = strdup("name");
+
+    master->columns[2].index = 2;
+    master->columns[2].type = COL_STRING;
+    master->columns[2].name = strdup("tbl_name");
+
+    master->columns[3].index = 3;
+    master->columns[3].type = COL_INT;
+    master->columns[3].name = strdup("root_pagenum");
+
+    master->columns[4].index = 2;
+    master->columns[4].type = COL_STRING;
+    master->columns[4].name = strdup("sql");
+
     master->tree = btree_get(0, db->pager);
-    db->master = master;
     printf("init master metainfo\n");
 }
 /* db初始化
@@ -92,7 +107,7 @@ DB* db_open(const char *file_name)
         size_t ntabs;
         uint8_t** data = NULL;
         btree_select(tree, &ntabs, &data);
-        db->tabs = malloc(sizeof(Table*) *ntabs);
+        db->tabs = malloc(sizeof(Table) *ntabs);
         db->ntab = ntabs;
         printf("Db open, master load %ld tabs\n", ntabs);
         printf("Table master:\n[id] | name | root_pagenum | cols\n");
@@ -100,8 +115,7 @@ DB* db_open(const char *file_name)
         {
             // 解析表的元信息
             // type name tbl_name root_page sql
-            db->tabs[i] = malloc(sizeof(Table));
-            Table* tab = db->tabs[i];
+            Table* tab = &db->tabs[i];
             uint8_t* tabmeta = data[i];
 
             int k = 0;

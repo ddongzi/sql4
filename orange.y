@@ -57,7 +57,8 @@ select_stmt: SELECT expr_list FROM table_ref ';' {
         ;
 table_ref: NAME { $$ = newTableRef($1); }
         ;
-expr: NAME { $$ = newExpr($1); }
+expr: NAME { $$ = newStringExpr($1); }
+        | INTNUM { $$ = newIntExpr($1);}
         ;
 /*表达式列表*/
 expr_list: expr { $$ = newExprList($1); }

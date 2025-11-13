@@ -7,9 +7,9 @@
 // 一个数据库一个pager
 typedef struct {
     Pager* pager;
-    Table** tabs; // 元信息
+    Table* tabs; // 元信息
     int ntab;
-    Table* master; // master表 type name tbl_name root_page sql
+    Table master; // master表 type name tbl_name root_page sql
 } DB;
 
 extern DB* g_db;

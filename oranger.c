@@ -58,15 +58,23 @@ void freeInsertStmt(struct InsertStmt* insertst)
 
     free(insertst); 
 }
-struct Expr* newExpr(char* name)
+struct Expr* newIntExpr(int i)
 {
     struct Expr* expr = malloc(sizeof(struct Expr));
-    expr->name = strdup(name);
+    expr->type = EXPR_INT;
+    expr->ival = i;
+    return expr;
+}
+struct Expr* newStringExpr(char* s)
+{
+    struct Expr* expr = malloc(sizeof(struct Expr));
+    expr->type = EXPR_STRING;
+    expr->sval = strdup(s);
     return expr;
 }
 void freeExpr(struct Expr* expr)
 {
-    free(expr->name);
+    if (expr->type == EXPR_STRING) free(expr->sval);
     free(expr);
 }
 struct TableRef* newTableRef(char* name)
@@ -138,7 +146,17 @@ static void printIdent(int level)
 static void printExpr(struct Expr* expr, int level)
 {
     printIdent(level);
-    printf("└─ Expr: [%s]\n", expr->name);  
+    switch (expr->type)
+    {
+    case EXPR_STRING:
+        printf("└─ Expr: [%s]\n", expr->sval);  
+        break;
+    case EXPR_INT:
+        printf("└─ Expr: [%d]\n", expr->ival);  
+        break;
+    default:
+        break;
+    }
 }
 static void printExprList(struct ExprList* exprs, int level)
 {

@@ -4,8 +4,18 @@
 #include "vdbe.h"
 
 // 嵌套结构体本身就是树
+// abc,123
+enum ExprType {
+    EXPR_INT,
+    EXPR_STRING,
+};
 struct Expr {
-    char* name;
+    enum ExprType type;
+    union 
+    {
+        int ival;
+        char* sval;
+    };
 };
 struct TableRef {
     char* name;
@@ -48,7 +58,8 @@ struct Stmt* newStmt(enum StmtType type, void* st);
 void stmtListAdd(struct Stmt* item); 
 
 struct SelectStmt* newSelectStmt(struct ExprList*, struct TableRef*);
-struct Expr* newExpr(char* name);
+struct Expr* newStringExpr(char* s);
+struct Expr* newIntExpr(int i);
 struct TableRef* newTableRef(char* name);
 struct ExprList* newExprList(struct Expr* item); // 一个个添加，刚开始是一个
 void exprListAdd(struct ExprList* exprs, struct Expr* item); // 一个个添加，刚开始是一个

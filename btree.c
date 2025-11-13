@@ -1,3 +1,9 @@
+/**
+ * btree是一个无类型的字节存储结构。
+ * - 通过 rowid 维护内部默认顺序
+ * - 每个叶子节点的每个cell存储一个row. 
+ *      - row格式为 <len1><data1><len2><data2>...
+ */
 #include "btree.h"
 #include <stdint.h>
 #include "sql4limit.h"
