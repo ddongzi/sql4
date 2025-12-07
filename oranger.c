@@ -149,10 +149,10 @@ static void printExpr(struct Expr* expr, int level)
     switch (expr->type)
     {
     case EXPR_STRING:
-        printf("└─ Expr: [%s]\n", expr->sval);  
+        printf("└─ Expr: (str)[%s]\n", expr->sval);  
         break;
     case EXPR_INT:
-        printf("└─ Expr: [%d]\n", expr->ival);  
+        printf("└─ Expr: (int)[%d]\n", expr->ival);  
         break;
     default:
         break;
@@ -260,7 +260,7 @@ void orange_parse(SqlPrepareContext* sqlctx)
     root->items = NULL;
     yydebug = 1;
     yyparse();
-    printf("(debug) root nstmt [%d]", root->nstmt);
+    printf("(debug) root total [%d] stmts.\n", root->nstmt);
     sqlctx->ast = root;
     printStmtList();
     yy_delete_buffer(buffer);

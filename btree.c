@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include "table.h"
 
 #define NODE_INTERNAL 1
 #define NODE_LEAF 0 // 空白页 都是0， 默认应该是leaf
@@ -24,7 +25,6 @@
 #define LEAF_NODE_MAX_CELLS BTREE_M
 
 #define INVALID_PAGE_NUM UINT8_MAX  // internal node为空节点 : right child page_num 为 INVALID_PAGE_NUM
-#define CELL_DATA_SIZE 256
 
 /* ============ Common header layout ============*/
 /*
@@ -1115,6 +1115,16 @@ void leaf_node_remove(Cursor *cursor)
 
     }
 }
+void cursor_build_offsets(Cursor *c) {
+    uint8_t* data = btree_cursor_value(c);
+    int j = 0;
+    for (int i = 0; i < MAX_COL; i++) {
+        c->offsets[i] = j;
+        int len = (data[j + 1] << 8) | data[j + 2];
+        j += 1 + 2 + len;
+        c->ncol += 1;
+    }
+}
 /**
  * @brief 创建一个cursor指向第一个cell
  */
@@ -1125,6 +1135,8 @@ Cursor *btree_cursor_start(BTree *tree)
     leaf_node_t *node = (leaf_node_t*)pager_get_page(tree->pager, cursor->page_num);
     uint32_t num_cells = node->num_cells;
     cursor->end_of_table = (num_cells == 0);
+    // 
+    cursor_build_offsets(cursor);
 
     return cursor;
 }

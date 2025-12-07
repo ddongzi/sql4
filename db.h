@@ -5,6 +5,7 @@
 
 
 // 一个数据库一个pager
+// 这里一些成员未使用结构体指针，因为其还小
 typedef struct {
     Pager* pager;
     Table* tabs; // 元信息

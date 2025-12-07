@@ -3,7 +3,7 @@
 
 #include <stdbool.h>
 #include "pager.h"
-
+#include "sql4limit.h"
 #include "sql4code.h"
 /* 根据 architecture of sqlite. Backend: btree=>pager=>os*/
 /**
@@ -19,12 +19,15 @@ typedef struct  {
 /* 代表在table中的位置， #pagenum#cellnum。  也是Btree 的cell位置
  * 1. 指向表起始和表尾部
  * 2. 通过cursor 进行insert、select、delete、update， search for a ID , then cursor pointing this ID row。
+ * 3. 进一步的，让其记录cell row的各字段布局
  * */
 typedef struct {
     BTree *btree;
     uint32_t page_num; //
     uint32_t cell_num;
     bool end_of_table; // end表示最后一个cell了
+    int ncol; // row的字段数
+    int offsets[MAX_COL]; // 每个字段偏移 <type><len><data>
 }Cursor ;
 
 BTree* btree_get(uint32_t root_pagenum, Pager* pager);

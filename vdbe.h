@@ -5,7 +5,6 @@
 #include <unistd.h>
 #include <stdint.h>
 #include "pager.h"
-#include "table.h"
 #include "db.h"
 typedef struct StmtList AST; // 向前声明
 
@@ -27,25 +26,25 @@ typedef struct  {
     union P4_t p4;
 } Instruction;
 enum OPCode{ 
-    Init,
-    CreateBtree,
-    OpenRead,
-    Rewind,
-    Column,
-    ResultRow,
-    Next,
-    Halt,
-    String,
-    Integer,
-    Copy,
-    MakeRecord,
-    Transaction,
-    Goto,
-    OpenWrite,
-    Insert,
-    NewRowid,
-    SeekRowid,
-    Rowid,
+    OP_Init,
+    OP_CreateBtree,
+    OP_OpenRead,
+    OP_Rewind,
+    OP_Column,
+    OP_ResultRow,
+    OP_Next,
+    OP_Halt,
+    OP_String,
+    OP_Integer,
+    OP_Copy,
+    OP_MakeRecord,
+    OP_Transaction,
+    OP_Goto,
+    OP_OpenWrite,
+    OP_Insert,
+    OP_NewRowid,
+    OP_SeekRowid,
+    OP_Rowid,
 };
 
 typedef struct{
@@ -55,7 +54,7 @@ typedef struct{
 } InstructionList;
 
 typedef struct {
-    uint8_t* data; // 对于 <len><data>..的字节流，我们读取时候必须明确读多少，否则越界风险
+    uint8_t* data; // <type><len><data>...
     int n;
 } Row;
 

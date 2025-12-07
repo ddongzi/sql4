@@ -15,7 +15,7 @@ static int next_cursor_num = 0;
 
  Instruction* bytecode_init()
 {
-    Instruction* ins = vdbe_new_ins(Init, 0, 0, 0, (union P4_t){0});
+    Instruction* ins = vdbe_new_ins(OP_Init, 0, 0, 0, (union P4_t){0});
     return ins;
 }
 /**
@@ -27,7 +27,7 @@ static int next_cursor_num = 0;
  */
 Instruction* bytecode_createbtree()
 {
-    Instruction* ins = vdbe_new_ins(CreateBtree, nex_reg_num++, 0, 0, (union P4_t){0});
+    Instruction* ins = vdbe_new_ins(OP_CreateBtree, nex_reg_num++, 0, 0, (union P4_t){0});
     return ins;
 }
 
@@ -39,7 +39,7 @@ Instruction* bytecode_createbtree()
  */
 Instruction* bytecode_openwrite(int root_page_num)
 {
-    Instruction* ins = vdbe_new_ins(OpenWrite, next_cursor_num++,
+    Instruction* ins = vdbe_new_ins(OP_OpenWrite, next_cursor_num++,
          root_page_num,
          0, (union P4_t){0});
     return ins;
@@ -53,7 +53,7 @@ Instruction* bytecode_openwrite(int root_page_num)
 Instruction* bytecode_openread(char* tabname)
 {
 
-    Instruction* ins = vdbe_new_ins(OpenRead, next_cursor_num++, 
+    Instruction* ins = vdbe_new_ins(OP_OpenRead, next_cursor_num++, 
         db_get_table(g_db, tabname)->tree->root_page_num,
         0, (union P4_t){0});
     return ins;
@@ -67,18 +67,18 @@ Instruction* bytecode_openread(char* tabname)
 */
 Instruction* bytecode_rewind(int cursor_num)
 {
-    Instruction* ins = vdbe_new_ins(Rewind, cursor_num, 0, 0, (union P4_t){0});
+    Instruction* ins = vdbe_new_ins(OP_Rewind, cursor_num, 0, 0, (union P4_t){0});
     return ins;
 }
 /**
  * P1: cursor编号
- * P2: 列，从1开始
+ * P2: 列，从0开始
  * P3: 目标寄存器
  * P4: 0 not used
  */
 Instruction* bytecode_column(int p1, int p2)
 {
-    Instruction* ins = vdbe_new_ins(Column, p1, p2, nex_reg_num++, (union P4_t){0});
+    Instruction* ins = vdbe_new_ins(OP_Column, p1, p2, nex_reg_num++, (union P4_t){0});
     return ins;
 }
 /** cursor移动到下一行
@@ -89,7 +89,7 @@ Instruction* bytecode_column(int p1, int p2)
  */
  Instruction* bytecode_next(int p1, int p2)
 {
-    Instruction* ins = vdbe_new_ins(Next, p1, p2, 0, (union P4_t){0});
+    Instruction* ins = vdbe_new_ins(OP_Next, p1, p2, 0, (union P4_t){0});
     return ins;
 }
 /**
@@ -101,7 +101,7 @@ Instruction* bytecode_column(int p1, int p2)
  Instruction* bytecode_halt()
 {
     // 结束指令流运行
-    Instruction* ins = vdbe_new_ins(Halt, 0, 0, 0, (union P4_t){0});
+    Instruction* ins = vdbe_new_ins(OP_Halt, 0, 0, 0, (union P4_t){0});
     return ins;
 }
     /**
@@ -113,7 +113,7 @@ Instruction* bytecode_column(int p1, int p2)
 Instruction* bytecode_string(char* s)
 {
     union P4_t p4 = {.s = s};
-    Instruction* ins = vdbe_new_ins(String, 0, nex_reg_num++, 0, p4);
+    Instruction* ins = vdbe_new_ins(OP_String, 0, nex_reg_num++, 0, p4);
     return ins;
 }
 /**
@@ -125,7 +125,7 @@ Instruction* bytecode_string(char* s)
 Instruction* bytecode_integer(int i)
 {
     union P4_t p4 = {.i32 = i};
-    Instruction* ins = vdbe_new_ins(String, 0, nex_reg_num++, 0, p4);
+    Instruction* ins = vdbe_new_ins(OP_Integer, 0, nex_reg_num++, 0, p4);
     return ins;
 }
 /**
@@ -136,7 +136,7 @@ Instruction* bytecode_integer(int i)
  */
 Instruction* bytecode_copy(uint32_t p1)
 {
-    Instruction* ins = vdbe_new_ins(Copy, p1, nex_reg_num++, 0,(union P4_t){0} );
+    Instruction* ins = vdbe_new_ins(OP_Copy, p1, nex_reg_num++, 0,(union P4_t){0} );
     return ins;
 }
 
@@ -149,7 +149,7 @@ Instruction* bytecode_copy(uint32_t p1)
  */
 Instruction* bytecode_mkrecord(int32_t p1, int32_t p2)
 {
-     Instruction* ins = vdbe_new_ins(MakeRecord, p1, p2, nex_reg_num++, (union P4_t){0});
+     Instruction* ins = vdbe_new_ins(OP_MakeRecord, p1, p2, nex_reg_num++, (union P4_t){0});
     return ins;   
 }
 /**
@@ -161,7 +161,7 @@ Instruction* bytecode_mkrecord(int32_t p1, int32_t p2)
  */
 Instruction* bytecode_insert(uint32_t p1, int32_t p2, int32_t p3)
 {
-    Instruction* ins = vdbe_new_ins(Insert, p1,  p2, p3, (union P4_t){0});
+    Instruction* ins = vdbe_new_ins(OP_Insert, p1,  p2, p3, (union P4_t){0});
     return ins;   
 }
 
@@ -174,7 +174,7 @@ Instruction* bytecode_insert(uint32_t p1, int32_t p2, int32_t p3)
  */
 Instruction*  bytecode_newrowid(int cursor_num)
 {
-    Instruction* ins = vdbe_new_ins(NewRowid, cursor_num, nex_reg_num++, 0, (union P4_t){0});
+    Instruction* ins = vdbe_new_ins(OP_NewRowid, cursor_num, nex_reg_num++, 0, (union P4_t){0});
     return ins;   
 }
 /**
@@ -186,12 +186,14 @@ Instruction*  bytecode_newrowid(int cursor_num)
  */
 Instruction*  bytecode_resultrow(int p1, int p2)
 {   
-    Instruction* ins = vdbe_new_ins(ResultRow, p1, p2, 0, (union P4_t){0});
+    Instruction* ins = vdbe_new_ins(OP_ResultRow, p1, p2, 0, (union P4_t){0});
     
     return ins;   
 }
  void bytecode_select_stmt(struct SelectStmt* selectst, SqlPrepareContext* sqlctx)
 {
+    // column 
+
     uint32_t nins = 0;
     
     InstructionList* inslist = sqlctx->inslist;
@@ -217,7 +219,7 @@ Instruction*  bytecode_resultrow(int p1, int p2)
         int colk = 0;
         struct Expr* expr = selectst->col_list->items[i];
         colk = table_get_column_index(tabmeta, expr->sval);
-        Instruction* col_ins = bytecode_column(openread_ins->p1, colk + 1);
+        Instruction* col_ins = bytecode_column(openread_ins->p1, colk);
         vdbe_inslist_add(inslist, col_ins);
         if (col_ins->p3 < col_reg1) col_reg1 = col_ins->p3;
         if (col_ins->p3 > col_reg2) col_reg2 = col_ins->p3;
@@ -265,7 +267,7 @@ void bytecode_create_table_stmt(struct CreateStmt* creatst,  SqlPrepareContext* 
     Instruction* createbtree_ins = bytecode_createbtree();
     vdbe_inslist_add(inslist, createbtree_ins);
 
-    Instruction* openwt_ins = bytecode_openwrite(g_db->master->tree->root_page_num);
+    Instruction* openwt_ins = bytecode_openwrite(g_db->master.tree->root_page_num);
     vdbe_inslist_add(inslist, openwt_ins);
     
     Instruction* newrowid_ins = bytecode_newrowid(openwt_ins->p1);
@@ -315,23 +317,28 @@ void bytecode_insert_stmt(struct InsertStmt* insertst,  SqlPrepareContext* sqlct
     // 9     Goto           0     1     0                    0
     // sqlite>
     // TODO 现在并不涉及类型，存储都是以严格的<len><bytes>存储，至于格式解析可以考虑在解析时候设置。
-    // TODO 因此现在均先采用 string表示这个语意。
     InstructionList* inslist = sqlctx->inslist;
     Instruction* ins;
     ins = bytecode_init();
     vdbe_inslist_add(inslist, ins);
 
-    printf("(debug) insert find tabnme %s", insertst->table_ref->name);
+    printf("(debug) insert find tabnme %s\n", insertst->table_ref->name);
     Table* tabmeta = db_get_table(g_db, insertst->table_ref->name);
     assert(tabmeta);
 
     Instruction* owrite_ins = bytecode_openwrite(tabmeta->tree->root_page_num);
     vdbe_inslist_add(inslist, owrite_ins);
 
+    printf("(debug) valist nexpr : %d\n", insertst->val_list->nexpr);
+    assert(insertst);
+    assert(insertst->val_list);
     int reg_start = nex_reg_num;
     for (size_t i = 0; i < insertst->val_list->nexpr; i++)
     {
-        struct Expr* expr = insertst->val_list[i].items[i];
+        printf("(debug) valist %d\n", i);
+        assert(&insertst->val_list[i]);
+        struct Expr* expr = insertst->val_list->items[i];
+        assert(expr);
         if (expr->type == EXPR_INT) {
             ins = bytecode_integer(expr->ival);
         }
@@ -381,4 +388,5 @@ void bytecode_generate(SqlPrepareContext* sqlctx)
             break;
         }
     }
+    printf("(debug) bytecode generate done.\n");
 }

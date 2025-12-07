@@ -10,6 +10,7 @@ select a,b from tb;selct name,age from tb;
 
 create table tb (name,age);
 select type,name,sql,root_pagenum from master;
+insert into tb (name,age) values (wang,1);
 
 insert into users (name,sex) values (wang,women);
 select name,sex from users;

@@ -1,5 +1,6 @@
 #include "table.h"
 #include "sql4code.h"
+#include <string.h>
 int table_get_column_index(Table* tab, char* name)
 {
   // 查找列名对应元信息的列index
@@ -7,7 +8,7 @@ int table_get_column_index(Table* tab, char* name)
     {
         Column col = tab->columns[j];
         // TODO 或许应该对col的词法分析更多一层，只能是STRING？
-        if (strcmp(name, tab->columns[j].name) == 0) {
+        if (strcmp(name, col.name) == 0) {
             return col.index;
         }
     }
@@ -15,31 +16,26 @@ int table_get_column_index(Table* tab, char* name)
     return -1;
 }
 // 从bytes解析出指定colindex的数据
-static char* table_select_column_by_index(Table* tab, uint8_t bytes, int nb, int colidx)
+static char* table_select_column_by_index(Table* tab, uint8_t bytes[], int nbyte, int colidx)
 {
+    char* res = NULL;
     int colk = 0;
-    while (condition)
+    for (size_t i = 0; i < nbyte; )
     {
-        int len = ?
-        // 通用来说，不能区分 len部分占用多少字节，取决于字段类型。 所以必须是 <type><len><data>
-        // insert时候需要增加type字段。 目前2字节够用
+        // 通用来说，不能区分 len部分占用多少字节，取决于字段类型。 必须是 <type><len><data>
+        // 但是目前而言， 不需要，Len都是2字节够用了。
+        // insert时候需要增加type字段。 
+        int len = bytes[i] << 8 | bytes[i + 1];
+        i += 2;
+        if (colk == colidx) {
+            res = realloc(res, len + 1);
+            memcpy(res, bytes + i, len);
+            res[len] = '\0';
+            return res;
+        }
+        i += len;
     }
-        
+    sql4_errno = INTERNAL_BAD_ERR;
+    return res;        
 }
-/**
- * 将一行bytes数据，解析成table一些字段。 返回 结果字符串
- * 
- * @param cols 列index
- */
-char* table_select(Table* tab, uint8_t bytes, int nb, int cols[], int ncol)
-{
-    char s[256];
-    assert(ncol < tab->ncol);
-    for (size_t i = 0; i < ncol; i++)
-    {
-        Column col = tab->columns[cols[i]];
-        // 得到col字段数据
 
-    }
-        
-}

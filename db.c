@@ -11,12 +11,12 @@ DB* g_db = NULL; // 目前仅支持一个库
 Table* db_get_table(DB* db, char* name)
 {
     if (strcmp(name, "master") == 0) {
-        return db->master;
+        return &db->master;
     }
     for (int i = 0; i < db->ntab; i++)
     {
-        if (strcmp(db->tabs[i]->name, name) == 0) {
-            return db->tabs[i];
+        if (strcmp((db->tabs[i]).name, name) == 0) {
+            return &db->tabs[i];
         }
     }
     sql4_errno = TABLE_NOT_EXIST_ERR;
@@ -41,11 +41,7 @@ void db_close(DB* db)
 {
     printf("db closing..\n");
     pager_free(db->pager);
-    free_table(db->master);
-    for (size_t i = 0; i < db->ntab; i++)
-    {
-        free_table(db->tabs[i]);
-    }
+    free(db->tabs);
     free(db);
     printf("db closed.\n");
 }
@@ -110,7 +106,7 @@ DB* db_open(const char *file_name)
         db->tabs = malloc(sizeof(Table) *ntabs);
         db->ntab = ntabs;
         printf("Db open, master load %ld tabs\n", ntabs);
-        printf("Table master:\n[id] | name | root_pagenum | cols\n");
+        printf("Table master:\nindex | name | root_pagenum | cols\n");
         for (size_t i = 0; i < ntabs; i++)
         {
             // 解析表的元信息
@@ -119,9 +115,11 @@ DB* db_open(const char *file_name)
             uint8_t* tabmeta = data[i];
 
             int k = 0;
+            k += 1; //
             int typelen = tabmeta[k] << 8 | tabmeta[k + 1];
             k += 2 + typelen;
 
+            k += 1;
             int namelen = tabmeta[k] << 8 | tabmeta[k + 1];
             k += 2;
             tab->name = malloc(namelen + 1);
@@ -129,10 +127,12 @@ DB* db_open(const char *file_name)
             tab->name[namelen] = '\0';
             k += namelen;
             // 暂时没有用
+            k += 1;
             int tblnamelen = tabmeta[k] << 8 | tabmeta[k + 1];
             k += 2;
             k += tblnamelen;
 
+            k += 1;
             int root_pagenum_len = tabmeta[k] << 8 | tabmeta[k + 1];
             assert(root_pagenum_len == 4);
             k += 2;
@@ -141,7 +141,9 @@ DB* db_open(const char *file_name)
             tab->tree = btree_get(root_pagenum, db->pager);
             k += 4;
 
-            // 从sql中解析列名
+            // 从sql中解析列名，类型，约束等
+            // TODO 类型
+            k += 1;
             int sql_len = (tabmeta[k] << 8) | (tabmeta[k + 1]);
             k += 2;
             char* sql = malloc(sql_len + 1);
@@ -149,7 +151,7 @@ DB* db_open(const char *file_name)
             sql[sql_len] = '\0';
             char* start = strchr(sql, '(');
             char* end = strchr(sql, ')');
-            tab->cols = NULL;
+            tab->columns = NULL;
             tab->ncol = 0;
             if (start && end && end > start) {
                 char cols[256];
@@ -161,17 +163,19 @@ DB* db_open(const char *file_name)
                 while (token)
                 {
                     tab->ncol ++;
-                    tab->cols = realloc(tab->cols, tab->ncol * sizeof(char*));
-                    tab->cols[tab->ncol - 1] = strdup(token);
+                    tab->columns = realloc(tab->columns, tab->ncol * sizeof(Column));
+                    tab->columns[tab->ncol - 1].name = strdup(token);
+                    tab->columns[tab->ncol - 1].index = tab->ncol - 1;
+                    // tab->columns[tab->ncol - 1].type =  TODO 
                     token = strtok(NULL, ",");
                 }
             }
             
             // print table meta
-            printf("[%ld] | %s | %d | cols: ", i, tab->name, tab->tree->root_page_num);
+            printf("%ld | %s | %d | cols: ", i, tab->name, tab->tree->root_page_num);
             for (size_t i = 0; i < tab->ncol; i++)
             {
-                printf("%s ", tab->cols[i]);
+                printf("%s ", tab->columns[i].name);
             }
             free(tabmeta);
             printf("\n");

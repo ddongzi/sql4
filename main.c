@@ -72,28 +72,48 @@ void execute_sqlctx(SqlPrepareContext* sqlctx)
     // ResultBuffer....
     ResultBuffer* result = sqlctx->buffer;
     printf("Sql result: total [%d] rows.\n", result->nrow);
-    for (size_t i = 0; i < result->nrow; i++)
-    {
+    for (size_t i = 0; i < result->nrow; i++) {
         Row* row = result->data[i];
-        // <len><data><><>
-        int rj = 0;
-        int len = 0;
-        printf("row[%ld]:", i);
-        while (rj < row->n)
+        // <type><len><data>
+        size_t bi = 0;
+        printf("%ld |  ", i);
+        while (bi < row->n)
         {
-            len = row->data[rj] << 8 | row->data[rj + 1];
-            rj += 2;
-            char* s = malloc(len + 1);
-            memcpy(s, row->data + rj, len);
-            s[len] = '\0';
-            rj += len;
-            printf("<%d><%s>,", len, s);
-            free(s);
+            ColumnType type = row->data[bi];
+            bi += 1;
+            int len = row->data[bi] << 8 | row->data[bi + 1];
+            bi += 2;
+            switch (type)
+            {
+            case COL_INT:
+                {
+                    // 需要手动解析，存储是大端存储的。 WSL的cpu是小端读取的。
+                    int ival = 0;
+                    for (int k = 0; k < len; k++) {
+                        ival = (ival << 8) | row->data[bi + k];
+                    }
+                    bi += len;
+                    printf("%d ", ival);
+                }
+                break;
+            case COL_STRING:
+                {
+                    char* sval = malloc(len + 1);
+                    memcpy(sval, row->data + bi, len);
+                    sval[len] = '\0';
+                    printf("%s ", sval);
+                    free(sval);
+                    bi += len;
+                }
+                break;
+            default:
+                printf("EXECUTE SQLCTX, RESULT UNKOWN type %d \n", type);
+                break;
+            }
+        
         }
         printf("\n");
-        
     }
-    
 }
 // TODO 临时，单表支持
 /*处理源命令*/

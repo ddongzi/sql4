@@ -1,10 +1,10 @@
-sql4: btree.c bytecode.c db.c main.c oranger.c pager.c vdbe.c\
-	sql4code.h sql4limit.h table.h\
+sql4: btree.c bytecode.c db.c main.c oranger.c pager.c table.c vdbe.c\
+	sql4code.h sql4limit.h\
 	build/orange.tab.c build/orange_lex.yy.c
-	gcc -g -o sql4 btree.c bytecode.c db.c main.c oranger.c pager.c vdbe.c\
-		sql4code.h sql4limit.h table.h\
+	gcc -g -o sql4 btree.c bytecode.c db.c main.c oranger.c pager.c table.c  vdbe.c\
+		sql4code.h sql4limit.h\
 		build/orange.tab.c build/orange_lex.yy.c\
-		-Ibuild -I. -lfl 
+		-Ibuild -I. -lfl -lcmocka
 build/orange.tab.c: orange.y
 	mkdir -p build
 	bison -d -Wcounterexamples -o build/orange.tab.c orange.y

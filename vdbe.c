@@ -85,55 +85,55 @@ void print_inslist(InstructionList* inslist)
         printf("%4d ", i);
         switch (ins->opcode)
             {
-            case Init:
+            case OP_Init:
                 printf("%10s %6d %6d %6d %d\n", "Init", ins->p1, ins->p2, ins->p3, ins->p4.i32);
                 break;
-            case OpenRead:
+            case OP_OpenRead:
                 printf("%10s %6d %6d %6d %d\n", "OpenRead", ins->p1, ins->p2, ins->p3, ins->p4.i32);
                 break;
-            case Rewind:
+            case OP_Rewind:
                 printf("%10s %6d %6d %6d %d\n", "Rewind", ins->p1, ins->p2, ins->p3, ins->p4.i32);
                 break;
-            case Column:
+            case OP_Column:
                 printf("%10s %6d %6d %6d %d\n", "Column", ins->p1, ins->p2, ins->p3, ins->p4.i32);
                 break;
-            case ResultRow:
+            case OP_ResultRow:
                 printf("%10s %6d %6d %6d %d\n", "ResultRow", ins->p1, ins->p2, ins->p3, ins->p4.i32);
                 break;
-            case Next:
+            case OP_Next:
                 printf("%10s %6d %6d %6d %d\n", "Next", ins->p1, ins->p2, ins->p3, ins->p4.i32);
                 break;
-            case Halt:
+            case OP_Halt:
                 printf("%10s %6d %6d %6d %d\n", "Halt", ins->p1, ins->p2, ins->p3, ins->p4.i32);
                 break;
-            case Transaction:
+            case OP_Transaction:
                 printf("%10s %6d %6d %6d %d\n", "Transaction", ins->p1, ins->p2, ins->p3, ins->p4.i32);
                 break;
-            case Goto:
+            case OP_Goto:
                 printf("%10s %6d %6d %6d %d\n", "Goto", ins->p1, ins->p2, ins->p3, ins->p4.i32);
                 break;
-            case OpenWrite:
+            case OP_OpenWrite:
                 printf("%10s %6d %6d %6d %d\n", "OpenWrite", ins->p1, ins->p2, ins->p3, ins->p4.i32);
                 break;
-            case MakeRecord:
+            case OP_MakeRecord:
                 printf("%10s %6d %6d %6d %d\n", "MakeRecord", ins->p1, ins->p2, ins->p3, ins->p4.i32);
                 break;
-            case Insert:
+            case OP_Insert:
                 printf("%10s %6d %6d %6d %d\n", "Insert", ins->p1, ins->p2, ins->p3, ins->p4.i32);
                 break;
-            case String:
+            case OP_String:
                 printf("%10s %6d %6d %6d %s\n", "String", ins->p1, ins->p2, ins->p3, ins->p4.s);
                 break;
-            case Integer:
-                printf("%10s %6d %6d %6d %d\n", "Integer", ins->p1, ins->p2, ins->p3, ins->p4.s);
+            case OP_Integer:
+                printf("%10s %6d %6d %6d %d\n", "Integer", ins->p1, ins->p2, ins->p3, ins->p4.i32);
                 break;
-            case NewRowid:
+            case OP_NewRowid:
                 printf("%10s %6d %6d %6d %d\n", "NewRowid", ins->p1, ins->p2, ins->p3, ins->p4.i32);
                 break;
-            case CreateBtree:
+            case OP_CreateBtree:
                 printf("%10s %6d %6d %6d %d\n", "CreateBtree", ins->p1, ins->p2, ins->p3, ins->p4.i32);
                 break;
-            case Copy:
+            case OP_Copy:
                 printf("%10s %6d %6d %6d %d\n", "Copy", ins->p1, ins->p2, ins->p3, ins->p4.i32);
                 break; 
             default:
@@ -191,19 +191,20 @@ static void execute_halt(SqlPrepareContext* sqlctx, Instruction* ins)
 static void execute_resultrow(SqlPrepareContext* sqlctx, Instruction* ins)
 {
     printf("execute resultrow\n");
+    // TODO 直接用字符串表示输出，
     ResultBuffer* result = sqlctx->buffer;
     result->nrow += 1;
     result->data = realloc(result->data, result->nrow * sizeof(Row*)); // 新增一行
     // TODO 默认一行最长
     result->data[result->nrow - 1] = malloc(sizeof(Row)); // 为新的一行分配内存
     // 拼接
+
     Row* row = result->data[result->nrow - 1];
     row->data = NULL;
     row->n = 0;
     int bdi = 0;
     for (size_t i = ins->p1; i <= ins->p2; i++)
     {
-        // <len1><d1><len2><d2>
         uint8_t* data = g_registers[i].value.bytes;
         int n = g_registers[i].n;
         row->n += n;
@@ -234,22 +235,18 @@ static void execute_column(SqlPrepareContext* sqlctx, Instruction* ins)
     assert(cursor);
     int coli = ins->p2;
     // 读取coli的内容 到 ins.p2寄存器
-    // 目前都是直接全部读出来忽略表结构
+    // cursor引入 row布局
+    int j = cursor->offsets[coli];
     uint8_t* data = btree_cursor_value(cursor);
-    int j = 0;
-    for (size_t i = 0; i < coli; i++)
-    {
-        int len = (data[j] << 8 | data[j+1]);
-        if (i == coli - 1) {
-            uint8_t* tmp = malloc(2 + len);
-            memcpy(tmp, data + j, 2 + len);
-            g_registers[ins->p3].value.bytes = tmp;
-            g_registers[ins->p3].flags = REG_BYTES;
-            g_registers[ins->p3].n = 2 + len;
+    int len = (data[j + 1] << 8) | data[j + 2];
 
-        } 
-        j += 2 + len;
-    }
+    uint8_t* tmp = malloc(1 + 2 + len);
+    memcpy(tmp, data + j, 1 + 2 + len);
+
+    Register *r = &g_registers[ins->p3];
+    r->value.bytes = tmp;
+    r->n = 1 + 2 + len;
+    r->flags = REG_BYTES;
 }
 
 // 创建cursor
@@ -287,15 +284,12 @@ static void execute_integer(SqlPrepareContext* sqlctx, Instruction* ins)
     g_registers[ins->p2].flags = REG_I32;
     g_registers[ins->p2].value.i32 = ins->p4.i32;
 }
-// 组装序列化bytes，
+// 把一些寄存器bytes， 组装起来
 static void execute_makerecord(SqlPrepareContext* sqlctx, Instruction* ins)
 {
-    // TODO 为了不同的len field长度, 需要type表示，  expr type -> reg type -> table col type
-    // TODO 需要考虑CELL_DATA_SIZE
-    // NOW 2字节的length field 够用的。 不改了
-    // 格式: <len1><data1><len2><data2>...
     size_t bytesize = 0;
     for (size_t i = ins->p1; i <= ins->p2; i++) {
+        bytesize += 1; // type field
         bytesize += 2; // length field
         bytesize += g_registers[i].n;
     }
@@ -311,8 +305,10 @@ static void execute_makerecord(SqlPrepareContext* sqlctx, Instruction* ins)
         switch (g_registers[i].flags)
         {
         case REG_I32: {
+            ColumnType type = COL_INT;
             uint16_t len = 4;
             int32_t v = g_registers[i].value.i32;
+            bytes[bi++] = (uint8_t) type;
             bytes[bi++] = (len >> 8) & 0xff;
             bytes[bi++] = len & 0xff;
             bytes[bi++] = (v >> 24) & 0xff;
@@ -322,7 +318,9 @@ static void execute_makerecord(SqlPrepareContext* sqlctx, Instruction* ins)
             break;
         }
         case REG_STR: {
+            ColumnType type = COL_STRING;
             uint16_t len = g_registers[i].n;
+            bytes[bi++] = (uint8_t) type;
             bytes[bi++] = (len >> 8) & 0xff;
             bytes[bi++] = len & 0xff;
             if (g_registers[i].value.s && len > 0) {
@@ -336,7 +334,7 @@ static void execute_makerecord(SqlPrepareContext* sqlctx, Instruction* ins)
             break;
         }
     }
-
+    // 最终寄存器类型是bytes
     g_registers[ins->p3].flags = REG_BYTES;
     g_registers[ins->p3].value.bytes = bytes; 
     g_registers[ins->p3].n = bytesize;
@@ -394,69 +392,69 @@ void vdbe_run(SqlPrepareContext *sqlctx)
         ins = sqlctx->inslist->ints[g_pc];
         switch (ins->opcode)
         {
-        case Init:
+        case OP_Init:
             execute_init(sqlctx, ins);
             g_pc++;
             break;
-        case OpenRead:
+        case OP_OpenRead:
             execute_openread(sqlctx, ins);
             g_pc++;
             break;
-        case Rewind:
+        case OP_Rewind:
             execute_rewind(sqlctx, ins);
             g_pc++;
             break;
             ;
-        case Column:
+        case OP_Column:
             execute_column(sqlctx, ins);
             g_pc++;
             break;
-        case ResultRow:
+        case OP_ResultRow:
             execute_resultrow(sqlctx, ins);
             g_pc++;
             break;
-        case Next:
+        case OP_Next:
             execute_next(sqlctx, ins);
             break;
-        case Halt:
+        case OP_Halt:
             // halt 作为最后一个指令，不进行gpc++
             execute_halt(sqlctx, ins);
             break;
-        case Transaction:
+        case OP_Transaction:
             g_pc++;
             break;
-        case Goto:
+        case OP_Goto:
             g_pc = ins->p1;
             break;
-        case OpenWrite:
+        case OP_OpenWrite:
             execute_openwrite(sqlctx, ins);
             g_pc++;
             break;
-        case String:
+        case OP_String:
             execute_string(sqlctx, ins);
             g_pc++;
             break;
-        case MakeRecord:
+        case OP_MakeRecord:
             execute_makerecord(sqlctx, ins);
             g_pc++;
             break;
-        case Insert:
+        case OP_Insert:
             execute_insert(sqlctx, ins);
             g_pc++;
             break;
-        case NewRowid:
+        case OP_NewRowid:
             execute_newrowid(sqlctx, ins);
             g_pc++;
             break;
-        case CreateBtree:
+        case OP_CreateBtree:
             execute_createbtree(sqlctx, ins);
             g_pc++;
             break;
-        case Copy:
+        case OP_Copy:
             execute_copy(sqlctx, ins);
             g_pc++;
             break;
-        case Integer:
+        case OP_Integer:
             execute_integer(sqlctx, ins);
             g_pc++;
             break;
