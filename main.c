@@ -110,6 +110,7 @@ void execute_sqlctx(SqlPrepareContext* sqlctx)
                 printf("EXECUTE SQLCTX, RESULT UNKOWN type %d \n", type);
                 break;
             }
+            printf("|");
         
         }
         printf("\n");

@@ -191,7 +191,6 @@ static void execute_halt(SqlPrepareContext* sqlctx, Instruction* ins)
 static void execute_resultrow(SqlPrepareContext* sqlctx, Instruction* ins)
 {
     printf("execute resultrow\n");
-    // TODO 直接用字符串表示输出，
     ResultBuffer* result = sqlctx->buffer;
     result->nrow += 1;
     result->data = realloc(result->data, result->nrow * sizeof(Row*)); // 新增一行
@@ -202,15 +201,17 @@ static void execute_resultrow(SqlPrepareContext* sqlctx, Instruction* ins)
     Row* row = result->data[result->nrow - 1];
     row->data = NULL;
     row->n = 0;
-    int bdi = 0;
     for (size_t i = ins->p1; i <= ins->p2; i++)
     {
-        uint8_t* data = g_registers[i].value.bytes;
-        int n = g_registers[i].n;
-        row->n += n;
-        printf("(debug) extend %d bytes. \n", n);
-        row->data = realloc(row->data, row->n);
-        memcpy(row->data + row->n - n, data, n);
+        row->n += g_registers[i].n;
+    }
+    row->data =  malloc(row->n);
+    
+    int off = 0;
+    for (size_t i = ins->p1; i <= ins->p2; i++)
+    {
+        memcpy(row->data + off, g_registers[i].value.bytes, g_registers[i].n);
+        off += g_registers[i].n;
     }
     printf("(debug)execute resultrow done \n");
 }
